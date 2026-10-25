@@ -1,0 +1,10 @@
+data/
+runs/
+results/
+release/
+*.gguf
+*.pt
+__pycache__/
+.venv/
+.pytest_cache/
+.omc/

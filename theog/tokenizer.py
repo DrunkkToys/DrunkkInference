@@ -1,0 +1,65 @@
+"""Lesson 1: train a byte-level BPE tokenizer.
+
+  uv run python -m theog.tokenizer --rows data/rows.jsonl --out data/tokenizer.json
+"""
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Iterable, Iterator
+
+from tokenizers import Tokenizer, decoders, models, pre_tokenizers, trainers
+
+from theog.tokens import SPECIAL_TOKENS
+
+VOCAB_SIZE = 16_000
+
+
+def build_tokenizer() -> Tokenizer:
+    """An empty byte-level BPE: GPT-2's split regex, every byte representable."""
+    tok = Tokenizer(models.BPE())
+    tok.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False, use_regex=True)
+    tok.decoder = decoders.ByteLevel()
+    return tok
+
+
+def train(texts: Iterable[str], vocab_size: int = VOCAB_SIZE, min_frequency: int = 2) -> Tokenizer:
+    tok = build_tokenizer()
+    trainer = trainers.BpeTrainer(
+        vocab_size=vocab_size,
+        min_frequency=min_frequency,
+        special_tokens=SPECIAL_TOKENS,                      # ids 0..8, in order
+        initial_alphabet=pre_tokenizers.ByteLevel.alphabet(),  # all 256 bytes
+        show_progress=False,
+    )
+    tok.train_from_iterator(texts, trainer=trainer)
+    return tok
+
+
+def row_texts(path: Path) -> Iterator[str]:
+    """The text the model will read: every prompt and every answer."""
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            row = json.loads(line)
+            yield row["user"]
+            yield row["answer"]
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--rows", type=Path, required=True, help="rows.jsonl from lesson 2")
+    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--vocab-size", type=int, default=VOCAB_SIZE)
+    a = ap.parse_args()
+    tok = train(row_texts(a.rows), a.vocab_size)
+    a.out.parent.mkdir(parents=True, exist_ok=True)
+    tok.save(str(a.out))
+    sample = "def add(a, b):\n    return a + b\n"
+    ids = tok.encode(sample).ids
+    print(f"{a.out}: {tok.get_vocab_size()} tokens")
+    print(f"{sample!r} -> {len(ids)} tokens: {[tok.id_to_token(i) for i in ids]}")
+
+
+if __name__ == "__main__":
+    main()
