@@ -21,7 +21,7 @@ graded-30 (CodeGen 19/30), 13/164 on HumanEval (CodeGen 22/164) and 31/500 on MB
 | 1 | [The tokenizer](lessons/01-tokenizer/README.md) | `theog/tokenizer.py`, `theog/tokens.py` |
 | 2 | [The data](lessons/02-data/README.md) | `theog/data.py`, `theog/contamination.py` |
 | 3 | [The chat format and packing](lessons/03-format-and-packing/README.md) | `theog/format.py`, `theog/pack.py` |
-| 4 | [The model](lessons/04-model/README.md) | `theog/model.py` |
+| 4 | [The model](lessons/04-model/README.md), in 8 steps: embedding, RMSNorm, attention, heads + QK-norm, RoPE, SwiGLU, block, whole model | `theog/model.py` |
 | 5 | [Training](lessons/05-training/README.md) | `theog/train.py`, `theog/generate.py` |
 | 6 | [The /think span](lessons/06-think-span/README.md) | `theog/format.py` |
 | 7 | [Evaluation](lessons/07-evaluation/README.md) | `theog/evaluate.py` |
