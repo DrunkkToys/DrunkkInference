@@ -81,9 +81,10 @@ uv run pytest tests/test_02_data.py
 
 ## theOG's own pipeline
 
-theOG v2 applied about twenty such rules (drop-reason counts are printed on every build) to a larger
-mix of sources, including tutorial sites it scraped itself. Those can't be redistributed, so they are
-left out here. The rules above are the ones that drop the most rows.
+theOG-50M v3 applied more rules of this kind to a larger mix: 12 public Hugging Face sources,
+4.96M rows and 2.49B tokens (the source list is on the
+[model card](https://huggingface.co/DrunkkToys/theOG-50M)). This course keeps two of those sources
+and the rules above, the ones that drop the most rows.
 
 ## Try this
 

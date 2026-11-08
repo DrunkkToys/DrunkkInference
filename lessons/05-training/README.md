@@ -20,7 +20,7 @@ A uniform guess over 16,000 tokens gives ln 16000 ≈ 9.68, the number you'll se
 
 ## The recipe: `theog/train.py`
 
-These are theOG-50M v2's settings:
+These are theOG-50M v3's settings (the same as v2's):
 
 | setting | value | what it does |
 |---|---|---|
@@ -101,8 +101,9 @@ model generates text.
 
 ## How this differs from theOG's own run
 
-Same recipe and same model. The data differs (lesson 2): theOG v2 trained on 833M tokens from 24
-source files. This course's two sources give fewer, so one epoch is shorter. `data/packed/meta.json`
+Same recipe and same model. The data differs (lesson 2): theOG-50M v3 trained on 2.49B tokens from
+12 public Hugging Face sources, and the published checkpoint is step 330,000 of one epoch of 348,177
+micro-batches. This course's two sources give fewer tokens, so one epoch is shorter. `data/packed/meta.json`
 has your exact token count.
 
 ## Try this

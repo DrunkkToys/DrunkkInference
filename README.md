@@ -8,9 +8,9 @@ The course is for Python developers who are new to machine learning. Each lesson
 from zero, points at the module that does it (each one is short enough to read in one sitting), and
 gives the command to run and the test that checks it.
 
-**Goal of theOG:** beat CodeGen-350M-mono with under 350M parameters. theOG-50M v2 scores 21/30 on
-graded-30 (CodeGen 19/30), 13/164 on HumanEval (CodeGen 22/164) and 31/500 on MBPP-500 (CodeGen
-87/500), so it is not there yet. Source:
+**Goal of theOG:** beat CodeGen-350M-mono with under 350M parameters. theOG-50M v3 does it on all
+three benchmarks: `/no_think`, greedy, it scores 25/30 on graded-30 (CodeGen 19/30), 39/164 on
+HumanEval (CodeGen 22/164) and 94/500 on MBPP-500 (CodeGen 87/500). Source:
 [theOG-50M model card](https://huggingface.co/DrunkkToys/theOG-50M).
 
 ## Lessons
@@ -65,8 +65,8 @@ ollama create theog:no_think -f release/Modelfile.no_think
 The course trains on two public datasets, downloaded at pinned revisions:
 [nvidia/OpenCodeInstruct](https://huggingface.co/datasets/nvidia/OpenCodeInstruct) (CC BY 4.0) and
 [OpenCoder-LLM/opc-sft-stage2](https://huggingface.co/datasets/OpenCoder-LLM/opc-sft-stage2) (MIT).
-theOG-50M v2 trained on a larger mix of 24 source files, so a model trained here will not score the
-same.
+theOG-50M v3 trained on 12 public Hugging Face sources (2.49B tokens), these two among them, so a
+model trained here will not score the same.
 
 ## Licence
 

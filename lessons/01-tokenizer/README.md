@@ -65,7 +65,8 @@ back to exactly itself, and that `<|Answer|>` is one token.
 theOG's tokenizer is the same kind (byte-level BPE, GPT-2 split). Its special tokens sit partly at the
 start (0 to 3) and partly at the end (15851 to 15857) of the vocabulary, because some were added to an
 existing tokenizer later. Starting fresh, putting them all first is simpler. It also has `<|Focus|>`
-tokens that theOG v2 never trains on, so they are left out here.
+tokens for theOG's research experiments, which the exported model does not need, so they are left
+out here.
 
 ## Try this
 

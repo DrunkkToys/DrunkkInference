@@ -38,9 +38,8 @@ def prompt_ids(tok, user, think=False):
 In training, `sequence()` always writes the span, and labels its tokens. So the model learns
 `<|Think|>` → `<|/Think|>` → `<|Answer|>`, and in `/think` mode it can close the span on its own.
 
-`sequence(..., think_text=...)` can put text inside the span. theOG v2 never does: every training
-row has an empty span and `/no_think`, and this course does the same. The text slot is there for
-your own experiments.
+`sequence(..., think_text=...)` can put text inside the span. This course never does: every
+training row has an empty span and `/no_think`. The text slot is there for your own experiments.
 
 ## Try both modes
 
@@ -58,12 +57,14 @@ The `/think` output starts with whatever the model wrote after `<|Think|>`, spec
 
 ## What it did for theOG
 
-From the [model card](https://huggingface.co/DrunkkToys/theOG-50M), shipped Q8_0, t 0.2, top-k 40:
+theOG-50M v3, from the [model card](https://huggingface.co/DrunkkToys/theOG-50M), PyTorch
+checkpoint at step 330,000, greedy:
 
 | mode | graded-30 | HumanEval-164 | MBPP-500 |
 |---|:-:|:-:|:-:|
-| `/no_think` | 21/30 | 13/164 | 31/500 |
-| `/think` | 21/30 | 10/164 | 28/500 |
+| `/no_think` | 25/30 | 39/164 | 94/500 |
+| `/think` | 28/30 | 41/164 | 91/500 |
+| either mode (a task counts if it passes in one of them) | 28/30 | 42/164 | 95/500 |
 
 The card notes that the two modes solve partly different tasks. Lesson 7 can score both
 (`--think`), so you can measure the same for your model.

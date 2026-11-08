@@ -11,7 +11,7 @@ code the model writes against tests it has never seen.
 | [MBPP](https://huggingface.co/datasets/google-research-datasets/mbpp), test split | 500 | one sentence and three `assert` lines, e.g. *"Write a function to find the shared elements from the given two lists."* |
 
 Both are loaded at a pinned revision. A task **passes** when the model's code plus the task's own
-tests run without error. The score is the number of tasks passed: HumanEval 13/164 means 13 tasks
+tests run without error. The score is the number of tasks passed: HumanEval 39/164 means 39 tasks
 passed.
 
 ## How a task is run: `theog/evaluate.py`
