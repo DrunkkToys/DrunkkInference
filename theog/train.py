@@ -2,7 +2,7 @@
 
   uv run python -m theog.train --packed data/packed --out runs/theog-50m
 
-One pass over the training windows (one epoch) with the recipe theOG-50M v2 used:
+One pass over the training windows (one epoch) with the recipe theOG-50M v3 used:
 AdamW (lr 3e-4, betas 0.9/0.95, weight decay 0.01), 5% linear warmup, cosine
 decay to 10% of the peak, gradient clipping at 1.0, batch 4 x 8 accumulation
 steps x 2048 tokens. Every --eval-every steps it measures the validation loss,

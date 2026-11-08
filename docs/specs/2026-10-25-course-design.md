@@ -16,9 +16,9 @@ tokenizer, data, model, training, evaluation, export to GGUF/Ollama.
 ## Decisions (builder)
 
 - One small package `theog/`, one module per lesson, plus a test per module that runs on CPU.
-- Model: exactly the exported theOG-50M v2 (stock qwen3 layout, 50,148,352 params). Research-only
+- Model: exactly the exported theOG-50M v2/v3 layout (stock qwen3, 50,148,352 params). Research-only
   pieces (Focus bias, depth router) left out.
-- Recipe: theOG v2's (AdamW 3e-4, 0.9/0.95, wd 0.01, 5% warmup, cosine to 10%, clip 1.0,
+- Recipe: theOG v2's, unchanged in v3 (AdamW 3e-4, 0.9/0.95, wd 0.01, 5% warmup, cosine to 10%, clip 1.0,
   batch 4 x 8 x 2048, fp32, one epoch).
 - Data: only two redistributable public sources, at pinned revisions: nvidia/OpenCodeInstruct
   (CC BY 4.0, rows with all tests passing) and opc-sft-stage2 educational_instruct (MIT). theOG's
@@ -36,6 +36,6 @@ tokenizer, data, model, training, evaluation, export to GGUF/Ollama.
 
 ## Known differences from theOG
 
-- Data mix and size (theOG v2: 24 source files, 833M tokens).
+- Data mix and size (theOG v3: 12 public HF sources, 4.96M rows, 2.49B tokens; v2: 24 source files, 833M tokens).
 - Token ids (own tokenizer).
 - MBPP harness runs the solution before the task setup; theOG's runs setup first.

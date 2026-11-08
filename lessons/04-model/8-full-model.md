@@ -93,7 +93,7 @@ uv run python -m theog.model
 theOG-50M: 50,148,352 parameters
 ```
 
-The same total as theOG-50M v2's published count.
+The same total as theOG-50M v3's published count.
 
 ## Why this exact layout
 
@@ -102,7 +102,7 @@ tied embeddings, no biases. llama.cpp, Ollama, LM Studio and MLX already run `qw
 export theOG with no custom code. theOG is not Qwen: it has no Qwen weights, only the same
 arrangement of layers.
 
-theOG-50M v2's research model has two extra pieces that `qwen3` has no place for, removed at export
+theOG-50M v3's research model has two extra pieces that `qwen3` has no place for, removed at export
 (see "Export notes" on the [model card](https://huggingface.co/DrunkkToys/theOG-50M)). The course
 model is the exported one: with the same weights loaded, it gives the same logits as theOG's own
 model with those pieces off.

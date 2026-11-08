@@ -6,7 +6,7 @@ to a single `.gguf` file that runs offline in Ollama, LM Studio or llama.cpp.
 
 ## The model you are rebuilding
 
-theOG-50M v2 is public: [huggingface.co/DrunkkToys/theOG-50M](https://huggingface.co/DrunkkToys/theOG-50M).
+theOG-50M v3 is public: [huggingface.co/DrunkkToys/theOG-50M](https://huggingface.co/DrunkkToys/theOG-50M).
 Try it before you build your own:
 
 ```bash
@@ -19,17 +19,19 @@ Ask it for a function in plain English, for example *"Write a function that chec
 
 **Goal:** beat Salesforce CodeGen-350M-mono, a model 7× larger, with under 350M parameters.
 
-Scores of the shipped file (Q8_0, `/no_think`, temperature 0.2, top-k 40) against CodeGen-350M on the
-same harness. The source is the theOG-50M model card, which lists the result file for every cell:
+Scores against CodeGen-350M-mono on the same harness, the same tasks and the same graders, greedy.
+The source is the [theOG-50M model card](https://huggingface.co/DrunkkToys/theOG-50M). The theOG-50M
+v3 numbers are for its PyTorch checkpoint (training step 330,000); the card says its GGUF files are
+not benchmarked yet.
 
-| benchmark | theOG-50M v2 | CodeGen-350M-mono |
-|---|:-:|:-:|
-| graded-30 (30 everyday function tasks) | 21/30 | 19/30 |
-| HumanEval-164 | 13/164 | 22/164 |
-| MBPP-500 | 31/500 | 87/500 |
+| benchmark | theOG-50M v3 `/no_think` | theOG-50M v3 `/think` | theOG-50M v2 `/no_think` | CodeGen-350M-mono |
+|---|:-:|:-:|:-:|:-:|
+| graded-30 (30 everyday function tasks) | 25/30 | 28/30 | 20/30 | 19/30 |
+| HumanEval-164 | 39/164 | 41/164 | 12/164 | 22/164 |
+| MBPP-500 | 94/500 | 91/500 | 34/500 | 87/500 |
 
-theOG leads on graded-30 and trails on HumanEval and MBPP. The goal is not reached yet. This course
-gives you the whole pipeline, so you can try to close the gap yourself.
+theOG-50M v3 passes more tasks than CodeGen-350M-mono on all three, with 7× fewer parameters. This
+course gives you the whole pipeline, so you can build the same kind of model yourself.
 
 ## The pipeline
 
@@ -69,10 +71,10 @@ GPU: NVIDIA (CUDA) or Apple silicon (MPS).
 The code here is a clean rewrite of theOG's own pipeline, written to be read. Three things differ, and
 each lesson says where:
 
-- **Model.** Lesson 4's model computes the same function as theOG-50M v2's exported model. The test is
+- **Model.** Lesson 4's model computes the same function as theOG-50M v3's exported model. The test is
   zero difference in the logits once the same weights are loaded. theOG's research code also carries
   experiments that the shipped file does not use, and this course leaves those out.
-- **Data.** theOG v2 trained on a larger mix that includes scraped tutorial sites. This course uses
-  only two public datasets that can be downloaded and redistributed, so your scores will differ.
+- **Data.** theOG-50M v3 trained on 12 public Hugging Face sources, 4.96M rows and 2.49B tokens.
+  This course uses two of them, so your scores will differ.
 - **Tokenizer.** Same kind and size (byte-level BPE, 16,000 tokens), trained on your data, so the
   token ids differ from theOG's.

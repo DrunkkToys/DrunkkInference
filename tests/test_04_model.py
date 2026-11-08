@@ -70,7 +70,7 @@ def test_step7_block_adds_to_the_residual_stream():
 def test_step8_theog_50m_has_theogs_parameter_count():
     with torch.device("meta"):
         model = TheOG(theog_50m())
-    assert count_params(model) == 50_148_352  # theOG-50M v2, release/config.json
+    assert count_params(model) == 50_148_352  # theOG-50M v3, DrunkkSet/release/v3/config.json
 
 
 def test_step8_output_head_is_the_embedding_table():
