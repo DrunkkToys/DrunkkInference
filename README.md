@@ -9,8 +9,8 @@ from zero, points at the module that does it (each one is short enough to read i
 gives the command to run and the test that checks it.
 
 **Goal of theOG:** beat CodeGen-350M-mono with under 350M parameters. theOG-50M v3 does it on all
-three benchmarks: `/no_think`, greedy, it scores 25/30 on graded-30 (CodeGen 19/30), 39/164 on
-HumanEval (CodeGen 22/164) and 94/500 on MBPP-500 (CodeGen 87/500). Source:
+three benchmarks: `/no_think`, greedy, it scores 26/30 on graded-30 (CodeGen 19/30), 42/164 on
+HumanEval (CodeGen 22/164) and 91/500 on MBPP-500 (CodeGen 87/500). Source:
 [theOG-50M model card](https://huggingface.co/DrunkkToys/theOG-50M).
 
 ## Lessons

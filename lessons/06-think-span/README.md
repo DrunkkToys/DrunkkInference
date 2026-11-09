@@ -58,13 +58,13 @@ The `/think` output starts with whatever the model wrote after `<|Think|>`, spec
 ## What it did for theOG
 
 theOG-50M v3, from the [model card](https://huggingface.co/DrunkkToys/theOG-50M), PyTorch
-checkpoint at step 330,000, greedy:
+checkpoint at step 346,000, greedy:
 
 | mode | graded-30 | HumanEval-164 | MBPP-500 |
 |---|:-:|:-:|:-:|
-| `/no_think` | 25/30 | 39/164 | 94/500 |
-| `/think` | 28/30 | 41/164 | 91/500 |
-| either mode (a task counts if it passes in one of them) | 28/30 | 42/164 | 95/500 |
+| `/no_think` | 26/30 | 42/164 | 91/500 |
+| `/think` | 28/30 | 41/164 | 93/500 |
+| either mode (a task counts if it passes in one of them) | 28/30 | 42/164 | 96/500 |
 
 The card notes that the two modes solve partly different tasks. Lesson 7 can score both
 (`--think`), so you can measure the same for your model.
