@@ -102,8 +102,8 @@ model generates text.
 ## How this differs from theOG's own run
 
 Same recipe and same model. The data differs (lesson 2): theOG-50M v3 trained on 2.49B tokens from
-12 public Hugging Face sources, and the published checkpoint is step 330,000 of one epoch of 348,177
-micro-batches. This course's two sources give fewer tokens, so one epoch is shorter. `data/packed/meta.json`
+12 public Hugging Face sources. The published checkpoint is step 346,000: 330,000 steps of the run,
+then 16,000 more resumed from step 330,000 (model card). This course's two sources give fewer tokens, so one epoch is shorter. `data/packed/meta.json`
 has your exact token count.
 
 ## Try this

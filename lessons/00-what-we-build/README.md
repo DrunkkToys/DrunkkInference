@@ -21,14 +21,14 @@ Ask it for a function in plain English, for example *"Write a function that chec
 
 Scores against CodeGen-350M-mono on the same harness, the same tasks and the same graders, greedy.
 The source is the [theOG-50M model card](https://huggingface.co/DrunkkToys/theOG-50M). The theOG-50M
-v3 numbers are for its PyTorch checkpoint (training step 330,000); the card says its GGUF files are
+v3 numbers are for its PyTorch checkpoint (training step 346,000); the card says its GGUF files are
 not benchmarked yet.
 
 | benchmark | theOG-50M v3 `/no_think` | theOG-50M v3 `/think` | theOG-50M v2 `/no_think` | CodeGen-350M-mono |
 |---|:-:|:-:|:-:|:-:|
-| graded-30 (30 everyday function tasks) | 25/30 | 28/30 | 20/30 | 19/30 |
-| HumanEval-164 | 39/164 | 41/164 | 12/164 | 22/164 |
-| MBPP-500 | 94/500 | 91/500 | 34/500 | 87/500 |
+| graded-30 (30 everyday function tasks) | 26/30 | 28/30 | 20/30 | 19/30 |
+| HumanEval-164 | 42/164 | 41/164 | 12/164 | 22/164 |
+| MBPP-500 | 91/500 | 93/500 | 34/500 | 87/500 |
 
 theOG-50M v3 passes more tasks than CodeGen-350M-mono on all three, with 7× fewer parameters. This
 course gives you the whole pipeline, so you can build the same kind of model yourself.
