@@ -58,7 +58,7 @@ uv run python -m theog.data build --raw data/raw --out data/rows.jsonl
 uv run python -m theog.contamination --rows data/rows.jsonl --out data/rows.clean.jsonl
 uv run python -m theog.tokenizer --rows data/rows.clean.jsonl --out data/tokenizer.json --vocab-size 8000
 uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokenizer.json --out data/packed --seq-len 512
-uv run python -m theog.train --packed data/packed --out runs/laptop --preset laptop --batch-size 16 --accum 1 --lr 1e-3 --eval-every 500 --eval-windows 200 --log-every 250
+uv run python -m theog.train --packed data/packed --out runs/laptop --preset laptop --epochs 3 --batch-size 16 --accum 1 --lr 1e-3 --eval-every 1000 --eval-windows 200 --log-every 500
 uv run python -m theog.evaluate --ckpt runs/laptop/best.pt --tokenizer data/tokenizer.json --dataset humaneval --out results/
 uv run python -m theog.evaluate --ckpt runs/laptop/best.pt --tokenizer data/tokenizer.json --dataset mbpp500 --out results/
 uv run --extra export python -m theog.export --ckpt runs/laptop/best.pt --tokenizer data/tokenizer.json --out release/laptop-Q8_0.gguf --quant Q8_0
