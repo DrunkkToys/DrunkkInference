@@ -1,7 +1,7 @@
 from collections import Counter
 
-from theog.contamination import Index
-from theog.data import Dedup, answer_in_prompt, clean, single_solution, solution_only
+from theog.contamination import Index, grams
+from theog.data import Dedup, answer_in_prompt, clean, single_solution, solution_only, with_tests
 
 
 def test_single_solution_picks_the_def_block_and_skips_tests():
@@ -23,6 +23,16 @@ def test_solution_only_drops_driver_code_docstrings_and_comments():
 def test_solution_only_rejects_non_python_and_code_without_def():
     assert solution_only("function f() { return 1; }") is None
     assert solution_only("print('hi')") is None
+
+
+def test_with_tests_names_the_function_only_when_the_prompt_does_not():
+    answer = "def is_pal(s):\n    return s == s[::-1]"
+    tests = 'assert is_pal("aba")\nassert not is_pal("ab")\nprint("ok")\nassert is_pal("")\nassert is_pal("x")'
+    out = with_tests("Check if a string is a palindrome.", answer, "", tests)
+    assert out == ('Check if a string is a palindrome.\nYour code should pass these tests:\n\n'
+                   'assert is_pal("aba")\nassert not is_pal("ab")\nassert is_pal("")')
+    assert with_tests("Write `is_pal`.", answer, "", tests) == "Write `is_pal`."   # already named
+    assert with_tests("Check it.", answer, "", "") == "Check it."                 # no tests to show
 
 
 def test_answer_in_prompt():
@@ -49,3 +59,15 @@ def test_contamination_index():
     idx = Index({"HumanEval/0:prompt": task})
     assert idx.hits("some prefix " + task) == ["HumanEval/0:prompt"]
     assert idx.hits("an unrelated row about sorting lists in python with a key function") == []
+
+
+def test_grams():
+    assert grams("a b c d", n=2) == {("a", "b"), ("b", "c"), ("c", "d")}
+    assert grams("f(x)", n=2) == {("f", "("), ("(", "x"), ("x", ")")}   # punctuation is its own word
+    assert grams("too short", n=13) == set()
+
+
+def test_skeleton_ignores_names():
+    from theog.data import skeleton
+    assert skeleton("def f(a):\n    return a + 1") == skeleton("def g(x):\n    return x + 1")
+    assert skeleton("def f(a):\n    return a + 1") != skeleton("def f(a):\n    return a - 1")

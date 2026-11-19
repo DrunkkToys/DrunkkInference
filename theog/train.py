@@ -25,7 +25,7 @@ from theog import model as M
 from theog.pack import load
 from theog.tokens import IGNORE
 
-PRESETS = {"theog_50m": M.theog_50m, "tiny": M.tiny}
+PRESETS = {"theog_50m": M.theog_50m, "laptop": M.laptop, "tiny": M.tiny}
 
 
 def pick_device() -> torch.device:
@@ -146,6 +146,8 @@ def train(packed: Path, out: Path, preset: str = "theog_50m", batch_size: int = 
             print(f"eval step {step:,}: val loss {val:.4f} (best {best:.4f}){mark}", flush=True)
     save(out / "final.pt", steps)
     val = evaluate(model, va_ids, va_lbl, eval_windows, batch_size, device)
+    if val < best:  # the last steps, at the smallest learning rate, are often the best
+        save(out / "best.pt", steps)
     print(f"done: {steps:,} steps in {time.time() - t0:,.0f}s | final val loss {val:.4f}", flush=True)
     return {"steps": steps, "final_val": val, "best_val": min(best, val)}
 

@@ -38,6 +38,12 @@ def theog_50m() -> Config:
     return Config()
 
 
+def laptop() -> Config:
+    """The laptop track: about 8M parameters, trains in about 35 minutes on an
+    Apple silicon laptop. Same layout as theOG-50M, only smaller."""
+    return Config(vocab_size=8_000, hidden=256, layers=6, heads=4, head_dim=64, ffn=1024, max_seq_len=512)
+
+
 def tiny() -> Config:
     """A toy size for tests and for reading the code on a laptop."""
     return Config(vocab_size=512, hidden=64, layers=2, heads=2, head_dim=32, ffn=256, max_seq_len=128)
@@ -53,6 +59,18 @@ class RMSNorm(nn.Module):
 
     def forward(self, x):
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps) * self.weight
+
+
+def causal_attention(q, k, v):
+    """Attention written out by hand (lesson 4, step 3). q, k, v: (..., T, d).
+
+    The model itself calls F.scaled_dot_product_attention, which computes the
+    same thing faster; the test checks that the two agree."""
+    T, d = q.shape[-2], q.shape[-1]
+    scores = q @ k.transpose(-2, -1) / d ** 0.5                     # (..., T, T)
+    future = torch.ones(T, T, dtype=torch.bool, device=q.device).triu(1)
+    scores = scores.masked_fill(future, float("-inf"))              # no peeking ahead
+    return scores.softmax(-1) @ v
 
 
 def rope_tables(cfg: Config):

@@ -4,15 +4,15 @@ import math
 import torch
 import torch.nn.functional as F
 
-from theog.model import (Attention, Block, RMSNorm, SwiGLU, TheOG, count_params, rope_tables, rotate,
-                         theog_50m, tiny)
+from theog.model import (Attention, Block, RMSNorm, SwiGLU, TheOG, causal_attention, count_params, laptop,
+                         rope_tables, rotate, theog_50m, tiny)
 
 
 def test_step1_embedding_is_a_table_lookup():
-    model = TheOG(tiny())
-    x = model.embed(torch.tensor([[5, 17, 5]]))
+    embed = torch.nn.Embedding(tiny().vocab_size, tiny().hidden)
+    x = embed(torch.tensor([[5, 17, 5]]))
     assert x.shape == (1, 3, 64)
-    assert torch.equal(x[0, 0], model.embed.weight[5]) and torch.equal(x[0, 0], x[0, 2])
+    assert torch.equal(x[0, 0], embed.weight[5]) and torch.equal(x[0, 0], x[0, 2])
 
 
 def test_step2_rmsnorm_gives_unit_rms_and_ignores_scale():
@@ -23,22 +23,36 @@ def test_step2_rmsnorm_gives_unit_rms_and_ignores_scale():
         assert torch.allclose(norm(x), norm(100 * x), atol=1e-4)
 
 
-def test_step3_attention_by_hand_matches_sdpa():
+def test_step2_rmsnorm_formula():
+    norm = RMSNorm(3, eps=0.0)
+    with torch.no_grad():
+        norm.weight.copy_(torch.tensor([1.0, 2.0, 3.0]))
+        x = torch.tensor([3.0, 0.0, 4.0])            # rms = sqrt(25 / 3)
+        rms = math.sqrt(25 / 3)
+        assert torch.allclose(norm(x), torch.tensor([3 / rms, 0.0, 12 / rms]), atol=1e-5)
+
+
+def test_step3_causal_attention_matches_pytorch():
     torch.manual_seed(0)
-    T, d = 5, 8
-    q, k, v = torch.randn(T, d), torch.randn(T, d), torch.randn(T, d)
-    scores = (q @ k.T / math.sqrt(d)).masked_fill(~torch.ones(T, T).tril().bool(), float("-inf"))
-    ref = F.scaled_dot_product_attention(q[None], k[None], v[None], is_causal=True)[0]
-    assert torch.allclose(scores.softmax(-1) @ v, ref, atol=1e-6)
+    q, k, v = torch.randn(2, 3, 5, 8), torch.randn(2, 3, 5, 8), torch.randn(2, 3, 5, 8)
+    ref = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+    assert torch.allclose(causal_attention(q, k, v), ref, atol=1e-5)
 
 
-def test_step4_attention_keeps_the_shape():
+def test_step3_first_token_only_reads_itself():
+    torch.manual_seed(0)
+    q, k, v = torch.randn(4, 8), torch.randn(4, 8), torch.randn(4, 8)
+    assert torch.allclose(causal_attention(q, k, v)[0], v[0], atol=1e-6)
+
+
+def test_step4_rope_tables_shape_and_start():
     cfg = tiny()
     cos, sin = rope_tables(cfg)
-    assert Attention(cfg)(torch.randn(2, 7, cfg.hidden), cos, sin).shape == (2, 7, cfg.hidden)
+    assert cos.shape == sin.shape == (cfg.max_seq_len, cfg.head_dim)
+    assert torch.allclose(cos[0], torch.ones(cfg.head_dim)) and torch.allclose(sin[0], torch.zeros(cfg.head_dim))
 
 
-def test_step5_rope_scores_depend_only_on_distance():
+def test_step4_rope_scores_depend_only_on_distance():
     cfg = tiny()
     cos, sin = rope_tables(cfg)
     torch.manual_seed(0)
@@ -47,6 +61,12 @@ def test_step5_rope_scores_depend_only_on_distance():
     assert torch.allclose(score(3, 1), score(50, 48), atol=1e-4)
     assert not torch.allclose(score(3, 1), score(3, 0), atol=1e-2)
     assert torch.allclose(rotate(q, cos[7], sin[7]).norm(), q.norm())
+
+
+def test_step5_attention_keeps_the_shape():
+    cfg = tiny()
+    cos, sin = rope_tables(cfg)
+    assert Attention(cfg)(torch.randn(2, 7, cfg.hidden), cos, sin).shape == (2, 7, cfg.hidden)
 
 
 def test_step6_swiglu_is_down_of_silu_gate_times_up():
@@ -71,6 +91,12 @@ def test_step8_theog_50m_has_theogs_parameter_count():
     with torch.device("meta"):
         model = TheOG(theog_50m())
     assert count_params(model) == 50_148_352  # theOG-50M v3, DrunkkSet/release/v3/config.json
+
+
+def test_step8_laptop_preset_size():
+    with torch.device("meta"):
+        model = TheOG(laptop())
+    assert count_params(model) == 8_343_552
 
 
 def test_step8_output_head_is_the_embedding_table():

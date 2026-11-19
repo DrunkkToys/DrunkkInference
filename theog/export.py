@@ -53,7 +53,7 @@ CHAT_TEMPLATE = (
 )
 
 SAMPLING = {"temperature": 0.2, "top_k": 40, "top_p": 1.0, "min_p": 0.0, "repeat_penalty": 1.0,
-            "repeat_last_n": 64, "num_ctx": 2048}
+            "repeat_last_n": 64}
 STOPS = ["<|/Answer|>", "<|end|>", "<|User|>"]
 
 
@@ -138,10 +138,10 @@ def go_template(mode: str) -> str:
             '{{- end }}{{- end }}')
 
 
-def modelfile(gguf_path: str, mode: str = "no_think") -> str:
+def modelfile(gguf_path: str, mode: str = "no_think", num_ctx: int = 2048) -> str:
     lines = [f"FROM {gguf_path}", f'TEMPLATE """{go_template(mode)}"""']
     lines += [f'PARAMETER stop "{s}"' for s in STOPS]
-    lines += [f"PARAMETER {k} {v}" for k, v in SAMPLING.items()]
+    lines += [f"PARAMETER {k} {v}" for k, v in {**SAMPLING, "num_ctx": num_ctx}.items()]
     return "\n".join(lines) + "\n"
 
 
@@ -159,7 +159,7 @@ def main() -> None:
     print(f"{a.out}  {a.quant}  sha256 {sha}")
     for mode in ("no_think", "think"):
         mf = a.out.parent / f"Modelfile.{mode}"
-        mf.write_text(modelfile(f"./{a.out.name}", mode))
+        mf.write_text(modelfile(f"./{a.out.name}", mode, model.cfg.max_seq_len))
         print(f"{mf}  ->  ollama create theog:{mode} -f {mf}")
 
 

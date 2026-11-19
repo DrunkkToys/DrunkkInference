@@ -16,6 +16,48 @@ from theog.tokens import SPECIAL_TOKENS
 VOCAB_SIZE = 16_000
 
 
+# ── BPE by hand (lesson 1, part 1) ────────────────────────────────────────
+# Slow but readable. The real tokenizer below uses the Rust `tokenizers`
+# library, which runs the same algorithm thousands of times faster.
+
+def most_frequent_pair(ids: list[int]) -> tuple[int, int] | None:
+    """The pair of neighbouring ids that occurs most often (first seen wins a
+    tie), or None when there are fewer than two ids."""
+    counts: dict[tuple[int, int], int] = {}
+    for pair in zip(ids, ids[1:]):
+        counts[pair] = counts.get(pair, 0) + 1
+    return max(counts, key=counts.get) if counts else None
+
+
+def merge(ids: list[int], pair: tuple[int, int], new_id: int) -> list[int]:
+    """Replace every occurrence of `pair`, left to right, with `new_id`."""
+    out, i = [], 0
+    while i < len(ids):
+        if i + 1 < len(ids) and (ids[i], ids[i + 1]) == pair:
+            out.append(new_id)
+            i += 2
+        else:
+            out.append(ids[i])
+            i += 1
+    return out
+
+
+def bpe_by_hand(text: str, n_merges: int) -> tuple[list[int], dict[int, bytes]]:
+    """Start from the UTF-8 bytes of `text` and do `n_merges` merges.
+    Returns the final ids and what each id stands for."""
+    ids = list(text.encode("utf-8"))
+    vocab = {i: bytes([i]) for i in range(256)}
+    for new_id in range(256, 256 + n_merges):
+        pair = most_frequent_pair(ids)
+        if pair is None:
+            break
+        ids = merge(ids, pair, new_id)
+        vocab[new_id] = vocab[pair[0]] + vocab[pair[1]]
+    return ids, vocab
+
+
+# ── the real tokenizer (lesson 1, part 2) ─────────────────────────────────
+
 def build_tokenizer() -> Tokenizer:
     """An empty byte-level BPE: GPT-2's split regex, every byte representable."""
     tok = Tokenizer(models.BPE())

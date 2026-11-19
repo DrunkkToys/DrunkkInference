@@ -37,9 +37,12 @@ _WS = re.compile(r"\s+")
 
 # ── download ──────────────────────────────────────────────────────────────
 
-def download(raw: Path) -> None:
+def download(raw: Path, parts: int = 0) -> None:
+    """Every file of every source, or only the first `parts` files of each
+    (the laptop track uses --parts 1)."""
     from huggingface_hub import hf_hub_download
     for name, (repo, rev, files, licence) in SOURCES.items():
+        files = files[:parts or None]
         print(f"{repo} @ {rev[:8]} ({licence}): {len(files)} file(s)", flush=True)
         for f in files:
             hf_hub_download(repo, f, repo_type="dataset", revision=rev, local_dir=raw / name)
@@ -171,6 +174,32 @@ def answer_in_prompt(user: str, answer: str, min_len: int = 20) -> bool:
     return False
 
 
+def function_name(answer: str, entry_point: str = "") -> str:
+    """The name the tests call: the row's entry_point, else the first def or
+    class at the top level of the answer."""
+    if entry_point:
+        return entry_point
+    for node in ast.parse(answer).body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            return node.name
+    return ""
+
+
+def with_tests(user: str, answer: str, entry_point: str, tests: str, n: int = 3) -> str:
+    """The prompt, plus up to n of the row's own assert lines when the prompt
+    never says what the function is called. Same wording as MBPP's prompts.
+
+    Without this the model has to invent a name, and a test that calls
+    `is_palindrome` fails on a correct `check_palindrome`."""
+    name = function_name(answer, entry_point)
+    if not name or name in user:
+        return user
+    asserts = [t.strip() for t in tests.splitlines() if t.strip().startswith("assert") and name in t][:n]
+    if not asserts:
+        return user
+    return user + "\nYour code should pass these tests:\n\n" + "\n".join(asserts)
+
+
 def clean(row: dict, drops: Counter) -> dict | None:
     user = (row["user"] or "").strip()
     if not user:
@@ -254,6 +283,8 @@ def build(raw: Path, out: Path, limit: int = 0) -> Counter:
                 row = clean(row, drops)
                 if row is None or not dedup.keep(row, drops):
                     continue
+                # after dedup, which must compare the tasks, not their test lists
+                row["user"] = with_tests(row["user"], row["answer"], row["entry_point"], row["tests"])
                 w.write(json.dumps(row, ensure_ascii=False) + "\n")
                 kept[row["source"]] += 1
     part.rename(out)
@@ -269,13 +300,14 @@ def main() -> None:
     sub = ap.add_subparsers(dest="cmd", required=True)
     d = sub.add_parser("download")
     d.add_argument("--raw", type=Path, required=True)
+    d.add_argument("--parts", type=int, default=0, help="first N files per source (0 = all); the laptop track uses 1")
     b = sub.add_parser("build")
     b.add_argument("--raw", type=Path, required=True)
     b.add_argument("--out", type=Path, required=True)
     b.add_argument("--limit", type=int, default=0, help="rows read per source (0 = all), for a quick sample")
     a = ap.parse_args()
     if a.cmd == "download":
-        download(a.raw)
+        download(a.raw, a.parts)
     else:
         build(a.raw, a.out, a.limit)
 
