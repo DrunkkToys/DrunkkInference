@@ -80,18 +80,16 @@ result(True, "all tests pass")
 
 
 def run_tests(solution: str, entry: str, tests: list[str], setup: str = "", timeout: int = 10):
-    """(passed, why), in a fresh isolated interpreter."""
-    job = json.dumps({"solution": solution, "entry": entry, "tests": tests, "setup": setup})
-    try:
-        r = subprocess.run([sys.executable, "-I", "-c", _RUNNER], input=job,
-                           capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        return False, f"timeout ({timeout}s)"
-    m = re.search(r"__RESULT__(\{.*\})", r.stdout)
-    if not m:
-        return False, "crashed: " + ((r.stderr.strip().splitlines() or ["no output"])[-1])
-    res = json.loads(m.group(1))
-    return res["ok"], res["why"]
+    """(passed, why), in a fresh isolated Python process.
+
+    Send the job as JSON on stdin to `python -I -c _RUNNER`. A timeout means
+    (False, f"timeout ({timeout}s)"). The runner prints __RESULT__{json};
+    no such line means (False, "crashed: <last stderr line>").
+    """
+    # EXERCISE 7.2: lessons/07-evaluation/README.md
+    # Hint: subprocess.run([sys.executable, '-I', '-c', _RUNNER], input=job,
+    #       capture_output=True, text=True, timeout=timeout).
+    raise NotImplementedError("exercise 7.2: write run_tests")
 
 
 class TheOGSolver:

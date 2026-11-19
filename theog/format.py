@@ -17,21 +17,30 @@ from theog.tokens import (ANSWER, ANSWER_CLOSE, ASSISTANT, END, IGNORE, THINK, T
 
 
 def prompt_ids(tok: Tokenizer, user: str, think: bool = False) -> list[int]:
-    """What the model reads before it writes. /no_think closes the think span
-    for the model; /think leaves it open (lesson 6)."""
-    mode = "think" if think else "no_think"
-    head = [USER] + tok.encode(f"\n{user.strip()} /{mode}\n").ids + [USER_CLOSE, ASSISTANT]
-    return head + ([THINK] if think else [THINK, THINK_CLOSE, ANSWER])
+    """What the model reads before it writes: exactly the start of the
+    training sequence of lesson 3. /no_think: the prompt ends with
+    [THINK, THINK_CLOSE, ANSWER], so the model starts on the answer. /think:
+    it ends with [THINK], so the model writes inside the span first.
+    """
+    # EXERCISE 5.4: lessons/05-training/README.md
+    # Hint: Same head as in sequence(): [USER] + encode('\n{task} /mode\n') + [USER_CLOSE, ASSISTANT].
+    raise NotImplementedError("exercise 5.4: write prompt_ids")
 
 
 def sequence(tok: Tokenizer, user: str, answer: str, think_text: str = "") -> dict:
-    mode = "think" if think_text else "no_think"
-    prompt = [USER] + tok.encode(f"\n{user.strip()} /{mode}\n").ids + [USER_CLOSE, ASSISTANT]
-    think = [THINK] + (tok.encode(f"\n{think_text}\n").ids if think_text else []) + [THINK_CLOSE]
-    body = [ANSWER] + tok.encode(f"\n```python\n{answer}\n```\n").ids + [ANSWER_CLOSE, END]
-    input_ids = prompt + think + body
-    supervised = [False] * len(prompt) + [True] * (len(think) + len(body))
-    # Shift by one: position i learns the NEXT token. The last position has
-    # no next token, so it learns nothing.
-    labels = [input_ids[i + 1] if supervised[i] else IGNORE for i in range(len(input_ids) - 1)] + [IGNORE]
-    return {"input_ids": input_ids, "labels": labels}
+    """One training sequence for one row, as {"input_ids", "labels"}.
+
+    input_ids: prompt + think span + answer, laid out as in the module
+    docstring. The prompt is [USER] + "\n{user stripped} /no_think\n"
+    (or /think when think_text is set) + [USER_CLOSE, ASSISTANT].
+    The think span is [THINK] + "\n{think_text}\n" (only if set) + [THINK_CLOSE].
+    The answer is [ANSWER] + "\n```python\n{answer}\n```\n" + [ANSWER_CLOSE, END].
+
+    labels[i] = input_ids[i + 1] at every position of the think span and the
+    answer; IGNORE at every prompt position (up to and including <|Assistant|>)
+    and at the very last position, which has no next token.
+    """
+    # EXERCISE 3.1: lessons/03-format-and-packing/README.md
+    # Hint: Build three lists, join them, and keep a parallel list of booleans
+    #       (False for prompt positions). Then shift by one.
+    raise NotImplementedError("exercise 3.1: write sequence")

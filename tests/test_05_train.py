@@ -1,15 +1,59 @@
+"""Lesson 5: the learning-rate schedule, the loss, sampling, the prompt, and a real (tiny) training run."""
+import math
+
 import torch
 from tokenizers import Tokenizer
 
-from theog.generate import extract_code, generate
+from theog.format import prompt_ids, sequence
+from theog.generate import generate, sample
 from theog.pack import pack
-from theog.train import load_model, lr_factor, train
+from theog.tokens import ANSWER, ASSISTANT, IGNORE, THINK, THINK_CLOSE, USER, USER_CLOSE
+from theog.train import load_model, loss_fn, lr_factor, train
 
 
 def test_lr_schedule():
     assert lr_factor(0, 100, 5) == 0
     assert lr_factor(5, 100, 5) == 1.0
     assert abs(lr_factor(100, 100, 5) - 0.10) < 1e-9
+    assert abs(lr_factor(2, 100, 5) - 0.4) < 1e-9                    # warmup is a straight line
+    assert 0.1 < lr_factor(50, 100, 5) < 1.0                         # decaying in the middle
+
+
+def test_loss_ignores_masked_positions():
+    logits = torch.zeros(1, 3, 4)                                    # uniform guess over 4 tokens
+    labels = torch.tensor([[2, IGNORE, IGNORE]])
+    assert abs(loss_fn(logits, labels).item() - math.log(4)) < 1e-6
+    logits[0, 1, 0] = 100.0                                          # a confident guess at an ignored spot...
+    assert abs(loss_fn(logits, labels).item() - math.log(4)) < 1e-6  # ...changes nothing
+
+
+def test_sample_greedy_and_top_k():
+    logits = torch.tensor([0.0, 5.0, 1.0, 4.0])
+    assert sample(logits, temperature=0) == 1
+    torch.manual_seed(0)
+    picks = {sample(logits, temperature=1.0, top_k=2) for _ in range(200)}
+    assert picks == {1, 3}                                           # only the two best ever come out
+
+
+def test_no_think_prompt_closes_the_span(tokenizer_file):
+    tok = Tokenizer.from_file(str(tokenizer_file))
+    p = prompt_ids(tok, "Add one.")
+    assert p[0] == USER and p[-5:] == [USER_CLOSE, ASSISTANT, THINK, THINK_CLOSE, ANSWER]
+    assert "/no_think" in tok.decode(p[1:-5])
+
+
+def test_think_prompt_leaves_the_span_open(tokenizer_file):
+    tok = Tokenizer.from_file(str(tokenizer_file))
+    p = prompt_ids(tok, "Add one.", think=True)
+    assert p[-3:] == [USER_CLOSE, ASSISTANT, THINK]
+    assert "/think" in tok.decode(p[1:-3]) and "/no_think" not in tok.decode(p[1:-3])
+
+
+def test_prompt_is_exactly_the_start_of_a_training_sequence(tokenizer_file):
+    tok = Tokenizer.from_file(str(tokenizer_file))
+    s = sequence(tok, "  Add one.  ", "def f(x):\n    return x + 1")
+    p = prompt_ids(tok, "  Add one.  ")
+    assert s["input_ids"][:len(p)] == p
 
 
 def test_tiny_model_learns_and_resumes(rows_file, tokenizer_file, tmp_path):
@@ -31,5 +75,4 @@ def test_tiny_model_learns_and_resumes(rows_file, tokenizer_file, tmp_path):
     tok = Tokenizer.from_file(str(tokenizer_file))
     raw = generate(model, tok, "Write a function f5 that subtracts 5 to its argument x.",
                    temperature=0, max_new=40)
-    assert "<|/Think|>" not in raw  # the prompt already closed the think span
-    assert isinstance(extract_code(raw), str)
+    assert raw.startswith("\n```python\ndef f")                    # it learned the shape of an answer

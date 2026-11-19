@@ -53,18 +53,19 @@ CHAT_TEMPLATE = (
 )
 
 SAMPLING = {"temperature": 0.2, "top_k": 40, "top_p": 1.0, "min_p": 0.0, "repeat_penalty": 1.0,
-            "repeat_last_n": 64, "num_ctx": 2048}
+            "repeat_last_n": 64}
 STOPS = ["<|/Answer|>", "<|end|>", "<|User|>"]
 
 
 def tensors(model) -> list[tuple[str, np.ndarray]]:
-    sd = {k: v.detach().float().cpu().numpy() for k, v in model.state_dict().items()}
-    out = [("token_embd.weight", sd["embed.weight"])]  # also the output head: tied
-    for i in range(model.cfg.layers):
-        out += [(f"blk.{i}.{dst}", sd[f"blocks.{i}.{src}"]) for src, dst in PER_BLOCK.items()]
-    out.append(("output_norm.weight", sd["norm.weight"]))
-    assert len(out) == len(sd), "a weight has no GGUF slot"
-    return out
+    """Every weight as (GGUF name, float32 numpy array), in this order:
+    token_embd.weight, then for each block i every PER_BLOCK entry as
+    blk.{i}.{gguf name}, then output_norm.weight.
+    """
+    # EXERCISE 8.1: lessons/08-export/README.md
+    # Hint: model.state_dict() keys are the course names: 'embed.weight',
+    #       'blocks.0.attn.q.weight', ..., 'norm.weight'. .detach().float().cpu().numpy().
+    raise NotImplementedError("exercise 8.1: write tensors")
 
 
 def add_tokenizer(w, tokenizer: Path, vocab_size: int) -> None:
@@ -138,11 +139,17 @@ def go_template(mode: str) -> str:
             '{{- end }}{{- end }}')
 
 
-def modelfile(gguf_path: str, mode: str = "no_think") -> str:
-    lines = [f"FROM {gguf_path}", f'TEMPLATE """{go_template(mode)}"""']
-    lines += [f'PARAMETER stop "{s}"' for s in STOPS]
-    lines += [f"PARAMETER {k} {v}" for k, v in SAMPLING.items()]
-    return "\n".join(lines) + "\n"
+def modelfile(gguf_path: str, mode: str = "no_think", num_ctx: int = 2048) -> str:
+    """The text of an Ollama Modelfile: FROM the gguf path, the TEMPLATE
+    from go_template(mode) in triple quotes, one PARAMETER stop line per STOPS
+    entry, one PARAMETER line per SAMPLING entry, then PARAMETER num_ctx
+    {num_ctx}: the model's context, so Ollama never feeds it a longer window
+    than it trained on.
+    """
+    # EXERCISE 8.2: lessons/08-export/README.md
+    # Hint: Lines like: FROM ./m.gguf / TEMPLATE """...""" / PARAMETER stop "<|end|>" /
+    #       PARAMETER temperature 0.2. Join with newlines, end with one.
+    raise NotImplementedError("exercise 8.2: write modelfile")
 
 
 def main() -> None:
@@ -159,7 +166,7 @@ def main() -> None:
     print(f"{a.out}  {a.quant}  sha256 {sha}")
     for mode in ("no_think", "think"):
         mf = a.out.parent / f"Modelfile.{mode}"
-        mf.write_text(modelfile(f"./{a.out.name}", mode))
+        mf.write_text(modelfile(f"./{a.out.name}", mode, model.cfg.max_seq_len))
         print(f"{mf}  ->  ollama create theog:{mode} -f {mf}")
 
 

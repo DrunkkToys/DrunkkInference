@@ -25,10 +25,12 @@ VAL_PCT = 5
 
 
 def split_of(user: str) -> str:
-    """By prompt hash: the same task is always on the same side, so the
-    validation loss is measured on tasks the model never trained on."""
-    h = int(hashlib.sha256(user.strip().encode()).hexdigest()[:8], 16)
-    return "val" if h % 100 < VAL_PCT else "train"
+    """'val' for about VAL_PCT % of prompts, 'train' for the rest, decided by
+    a hash of the stripped prompt so the same task always lands on the same side.
+    """
+    # EXERCISE 3.2: lessons/03-format-and-packing/README.md
+    # Hint: int(hashlib.sha256(user.strip().encode()).hexdigest()[:8], 16) % 100.
+    raise NotImplementedError("exercise 3.2: write split_of")
 
 
 class Packer:
@@ -42,20 +44,21 @@ class Packer:
         self.windows = self.tokens = 0
 
     def add(self, ids: list[int], labels: list[int]) -> None:
-        if len(self.ids) + len(ids) > self.seq_len:
-            self.flush()
-        self.ids += ids
-        self.lbl += labels
-        self.tokens += len(ids)
+        """Add one row to the current window. If it does not fit, flush the
+    window first. Count the row's tokens in self.tokens.
+        """
+        # EXERCISE 3.3: lessons/03-format-and-packing/README.md
+        # Hint: len(self.ids) + len(ids) > self.seq_len means it does not fit.
+        raise NotImplementedError("exercise 3.3: write Packer.add")
 
     def flush(self) -> None:
-        if not self.ids:
-            return
-        pad = self.seq_len - len(self.ids)
-        np.asarray(self.ids + [PAD] * pad, dtype=np.int16).tofile(self.ids_f)
-        np.asarray(self.lbl + [IGNORE] * pad, dtype=np.int16).tofile(self.lbl_f)
-        self.windows += 1
-        self.ids, self.lbl = [], []
+        """Write the current window, padded to seq_len (PAD in ids, IGNORE in
+    labels), as int16 to the two files. Do nothing if the window is empty.
+        """
+        # EXERCISE 3.4: lessons/03-format-and-packing/README.md
+        # Hint: np.asarray(list, dtype=np.int16).tofile(self.ids_f). Then reset the
+        #       lists and add 1 to self.windows.
+        raise NotImplementedError("exercise 3.4: write Packer.flush")
 
     def close(self) -> None:
         self.flush()
