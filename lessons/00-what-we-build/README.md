@@ -16,7 +16,7 @@ formats, downloads) and a test for every function you write.
 | model | 8.3M parameters (`--preset laptop`) | 50M parameters, theOG-50M's exact size |
 | data | 1 file per source, 178 MB, 95k rows | every file, 6.9 GB |
 | hardware | any Apple silicon Mac or NVIDIA GPU; a CPU works, slowly | a GPU you can leave busy for days |
-| training time | about 35 minutes on an M2 MacBook Air | days |
+| training time | about 50 minutes on an M2 MacBook Air | days |
 | what you get | a model that writes Python-shaped answers and solves the easy ones | the same pipeline as theOG-50M |
 
 **Do the laptop track first.** Every lesson gives its commands and the output we got on an M2, so
@@ -24,7 +24,7 @@ you can compare. The full track is the same commands with bigger numbers. Each l
 "full track" note.
 
 Set your expectations for the laptop model now, so it doesn't disappoint you later: 8M parameters
-trained for 35 minutes writes code that *looks* right much more often than it *is* right. Lesson 7
+trained for 50 minutes writes code that *looks* right much more often than it *is* right. Lesson 7
 shows you exactly how often it is right. That gap, and what closes it, is most of what there is to
 learn about small models.
 

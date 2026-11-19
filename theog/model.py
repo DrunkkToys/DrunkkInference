@@ -39,7 +39,7 @@ def theog_50m() -> Config:
 
 
 def laptop() -> Config:
-    """The laptop track: about 8M parameters, trains in about 35 minutes on an
+    """The laptop track: about 8M parameters, trains in about 50 minutes on an
     Apple silicon laptop. Same layout as theOG-50M, only smaller."""
     return Config(vocab_size=8_000, hidden=256, layers=6, heads=4, head_dim=64, ffn=1024, max_seq_len=512)
 

@@ -47,38 +47,46 @@ uv run python -m theog.generate --ckpt runs/laptop/best.pt --tokenizer data/toke
 
 ````text
 <|/Think|><|Answer|>
-```
-def is_prime(n):
-    if n <= 1:
+```python
+def is_prime(num):
+    if num <= 1:
         return False
-    if n <= 3:
+    if num == 2:
         return True
-    if n % 2 == 0 or n % 3 == 0:
+    if num % 2 == 0:
         return False
-    i = 5
-    while i * i <= n:
-        if n % i == 0 or n % (i + 2) == 0:
+    for i in range(3, int(num ** 0.5) + 1, 2):
+        if num % i == 0:
             return False
-        i += 6
     return True
 
 def is_prime(n):
-    return str(n) == str(n)[::-1]
-
+    ...                      # a second correct version
 def is_prime(n):
-    return str(n) == str(n)[::-1]
+    ...                      # a third, the classic 6k ± 1 test
+def is_prime(n):
+    if n <= 1:
+        return n
+    if n == 2:
+        return 2
+    if n % 2 == 0:
+        return is_prime(n - 1)
+    else:
+        return is_prime(n - 1)
 ```
 ````
+
+(Shortened here: the second and third functions are complete in the real output.)
 
 The output starts with what the model wrote after `<|Think|>`, special tokens shown. It closed the
 span and opened the answer by itself, as it was trained to.
 
-Then look at the answer. The first `is_prime` is a correct, classic 6k ± 1 prime test. Then the
-model kept going, and wrote two more functions with the same name that check for palindromes. In
-Python the last definition wins, so this answer **fails**. Run the same task without `--think` and
-you get the same three functions.
+Then look at the answer. The first `is_prime` is correct, and so are the next two, written three
+different ways. Then the model kept going and wrote a fourth that returns numbers instead of
+True/False. In Python the last definition wins, so this answer **fails**. Run the same task without
+`--think` and the answer ends with the same broken function.
 
-That's what an 8M-parameter model trained for 36 minutes does: it has learned what correct code
+That's what an 8M-parameter model trained for 48 minutes does: it has learned what correct code
 looks like, but not reliably when to stop. Lesson 7 measures how often that costs it the task.
 
 ## What it did for theOG
@@ -110,10 +118,11 @@ the same for your model.
 1. `<|/Think|><|Answer|>`, immediately. Every training row had an empty span, so after `<|Think|>`
    the only token it has ever seen is `<|/Think|>`. The two modes differ only in that the model
    wrote two tokens itself instead of being given them.
-2. On the laptop model, at temperature 0, two of four tasks we tried wrote something different:
-`fib_list` became `fib_fibonacci`, and a function that returned `[max_val, max_val]` now returned
-`max_val`. Not reliably worse, just different. That's the problem: your lesson 7 score would
-measure the model on prompts it never saw in training, and you'd never know why it moved.
+2. On the laptop model, at temperature 0, two of the four tasks we tried changed. `is_prime`
+   renamed its argument from `num` to `n`. `largest` went from a loop to
+   `max_num = max(nums); return max(nums)`. Not reliably worse, just different. That's the
+   problem: your lesson 7 score would measure the model on prompts it never saw in training, and
+   you'd never know why it moved.
 3. Each extra position is one more pass through every block, with its own attention over the
    prompt. The answer tokens can attend to those positions. The model can learn to use them as
    scratch space even without being told to, and the effect shows up in the scores, not in any text

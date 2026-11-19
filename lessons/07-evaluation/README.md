@@ -147,19 +147,20 @@ check that everything runs.
 Each task prints one line as it goes:
 
 ```text
-[  1/500] Mbpp/11          FAIL  no function named remove_Occ
+[  1/500] Mbpp/11          FAIL  assert failed: assert remove_Occ("hello","l") == "heo"
 [  2/500] Mbpp/12          FAIL  assert failed: assert sort_matrix([[1, 2, 3], [2, 4, 5], [1, 1, 1]])==[[1, 1, 1], [1, 2, 3], [2, 4, 5]]
-[  7/500] Mbpp/17          FAIL  TypeError: square_perimeter() missing 1 required positional argument: 'y'
+[  3/500] Mbpp/13          FAIL  code does not run: SyntaxError: '(' was never closed (<string>, line 5)
+[  4/500] Mbpp/14          FAIL  no function named find_Volume
 ...
 [ 52/500] Mbpp/62          PASS  all tests pass
 ...
-mbpp500: 3/500 passed  ->  results/laptop_mbpp500_no_think_t0.0_20261119T113601.jsonl
+mbpp500: 19/500 passed  ->  results/laptop_mbpp500_no_think_t0.0_20261119T124132.jsonl
 ```
 
-**These are the scores of this course's first laptop run**, trained before exercise 2.4 existed:
-**1/164** on HumanEval (HumanEval/51) and **3/500** on MBPP (Mbpp/62, Mbpp/99, Mbpp/297). Your
-model, trained with exercise 2.4, should do better. Don't read the score first: read *why* it
-failed. Count the reasons:
+**These are the scores of this course's laptop run:** **2/164** on HumanEval (HumanEval/35 and
+HumanEval/53) and **19/500** on MBPP. An earlier run, trained before exercise 2.4 existed, scored
+1/164 and 3/500. Yours should land within a few tasks of ours. Don't read the score first: read
+*why* it failed. Count the reasons:
 
 ```bash
 uv run python -c "
@@ -169,28 +170,33 @@ print(collections.Counter(r['why'].split(':')[0].split(' named ')[0] for r in ro
 " results/laptop_mbpp500_no_think_t0.0_*.jsonl
 ```
 
-For that first run:
+Here are both runs side by side:
 
-| reason | HumanEval | MBPP |
-|---|:-:|:-:|
-| assert failed: the code runs, the answer is wrong | 118 | 29 |
-| no function named …: right idea, wrong name | 13 | 343 |
-| code does not run: it doesn't even parse | 17 | 74 |
-| TypeError, IndexError, other errors at run time | 15 | 51 |
-| passed | 1 | 3 |
+| reason | HumanEval, before 2.4 | HumanEval | MBPP, before 2.4 | MBPP |
+|---|:-:|:-:|:-:|:-:|
+| assert failed: the code runs, the answer is wrong | 118 | 114 | 29 | 227 |
+| no function named …: right idea, wrong name | 13 | 3 | 343 | 81 |
+| code does not run: it doesn't even parse | 17 | 29 | 74 | 67 |
+| TypeError, IndexError, other errors at run time | 15 | 16 | 51 | 106 |
+| passed | 1 | 2 | 3 | 19 |
 
-Two different models are hiding in that table. On HumanEval, where the prompt *is* the function
-signature, the name is never the problem: the code runs and gives wrong answers. On MBPP, where the
-name only appears inside the asserts, 343 answers never got as far as being wrong. That second
-number is what lesson 2's exercise 2.4 fixes, and it was found exactly this way: by reading the
-reasons, not the score.
+Read the MBPP columns first. Before exercise 2.4, 343 answers never got as far as being wrong: the
+name only appears inside MBPP's asserts, and the model had learned to pick its own. That number was
+found exactly this way, by reading the reasons instead of the score, and exercise 2.4 is the fix.
+After it, 262 fewer answers have the wrong name. Most of them still fail, but now they fail for real
+reasons: "assert failed" went from 29 to 227 and run-time errors from 51 to 106. A wrong name hides
+every other kind of failure. 16 of those answers were right.
+
+On HumanEval, where the prompt *is* the function signature, the name was rarely the problem, so the
+fix barely touched it.
 
 Open the results file to see any answer in full:
 
 ```json
-{"task_id": "Mbpp/11", "passed": false, "why": "no function named remove_Occ",
- "code": "def remove_in_char(s):\n    return s.replace(' ', '').lower()", "raw": "..."}
+{"task_id": "Mbpp/11", "passed": false, "why": "assert failed: assert remove_Occ(\"hello\",\"l\") == \"heo\"",
+ "code": "def remove_Occ(s, char):\n    if len(s) == 0:\n        return s\n    else:\n        return s[len(s) - 1:len(s) - 1]", "raw": "..."}
 ```
+
 
 ## Differences from theOG's own harness
 
@@ -201,29 +207,36 @@ Open the results file to see any answer in full:
 
 ## Going further
 
-1. Compare your table with the first run's. Which reason went down, and which went up? (A wrong
-   name hides every other kind of failure. Fix the name, and some answers move to "assert failed".)
-2. Run MBPP with `--think`. Which tasks pass in only one of the two modes?
+1. In the table, which reasons went down after exercise 2.4, and which went up? Why did "assert
+   failed" go *up* by 198 when the model got better?
+2. Run HumanEval with `--think`. Which tasks pass in only one of the two modes? Which row of the
+   table changes the most?
 3. Your model writes code that *looks* right. Pick five "assert failed" answers and find the bug by
    hand. Is it the algorithm, an edge case, or did it answer a different question?
-4. Why is a one-task difference between two runs not a result?
+4. HumanEval went from 1 to 2 between the two runs. Why is that not a result, when MBPP's 3 to 19 is?
 
 <details><summary>Answers</summary>
 
-1. On our runs, "no function named" fell the most, as it should. Some of those tasks then failed
-   their asserts instead, so "assert failed" can go *up* even though the model got better. That's
-   why you read the whole table, not one row.
-2. Run it and compare the two results files by `task_id`. At this size expect a handful of tasks
-   each way: the two modes are not just noise, they write different code.
-3. On the first run, many wrong answers solved a nearby, more common task. Mbpp/11 asks to remove
-   the first and last occurrence of a given character; the model wrote a function that removes
-   spaces. A small model that has seen little data writes the function it has seen most often with
-   a similar prompt. More data (the full track) is what fixes that.
-4. Greedy decoding makes each run repeatable, but the model's choice at a near-tie can flip with
-   any small change: a retrain, a different seed, a slightly different prompt. One task out of
-   500 is 0.2%. Before believing a change, look for a difference of several tasks on both
-   benchmarks.
+1. "No function named" fell by 262, as it should. Those answers didn't all pass: most moved to
+   "assert failed" and to run-time errors, which is why both went up. The model didn't get worse at
+   those tasks; you can finally see how it fails them. That's why you read the whole table, not one
+   row.
+2. On our run, `--think` scored 1/164 (HumanEval/55), and none of the three passing tasks passes in
+   both modes. "Code does not run" goes from 29 to 45: with a think span, the model writes more
+   before the answer, and the longer it writes, the more likely it repeats itself and breaks the
+   last copy (you saw that in lesson 6).
+3. On our run most bugs are in the algorithm. Mbpp/17 asks for the perimeter of a square and gets
+   `n * (n + 1) ** 2`. Mbpp/11 gets the name and the empty-string case right, then returns an empty
+   slice. The shape is right and the arithmetic isn't. An 8M model trained for 50 minutes has seen
+   too little code to know which arithmetic goes with which words; more data and a bigger model (the
+   full track) is what fixes that.
+4. Greedy decoding makes each run repeatable, but the model's choice at a near-tie can flip with any
+   small change: a retrain, a different seed, a slightly different prompt. One task out of 164 is
+   noise. Sixteen out of 500, together with a 262-answer drop in the exact failure the fix targets,
+   is not. Before believing a change, look for a difference of several tasks and a reason in the
+   failure table.
 
 </details>
+
 
 Next: [lesson 8, export](../08-export/README.md).
