@@ -1,64 +1,72 @@
 # DrunkkInference
 
-Build **theOG**, a 50M-parameter Python code model, from scratch on your own GPU. You write the
-tokenizer, the data pipeline, the model, the training loop, the evaluation harness and the export,
-and end up with a `.gguf` file that runs offline in Ollama.
+Build your own Python code model from scratch, then run it offline in Ollama. You write the
+important parts yourself: the BPE tokenizer, the data filters, the label shift, attention and RoPE,
+the training loss, the sampler, the evaluation harness and the GGUF export. Each one has a test that
+fails until your code is right.
 
-The course is for Python developers who are new to machine learning. Each lesson explains one step
-from zero, points at the module that does it (each one is short enough to read in one sitting), and
-gives the command to run and the test that checks it.
+The course is for Python developers who are new to machine learning. No pretrained weights, no
+borrowed tokenizer, no framework beyond PyTorch.
 
-**Goal of theOG:** beat CodeGen-350M-mono with under 350M parameters. theOG-50M v3 does it on all
-three benchmarks: `/no_think`, greedy, it scores 26/30 on graded-30 (CodeGen 19/30), 42/164 on
+**Two tracks.** The laptop track trains an 8.3M-parameter model in about 35 minutes on an M2
+MacBook Air. The full track runs the same commands at theOG-50M's size, on a GPU, for days. Start
+with the laptop track.
+
+The full track rebuilds theOG-50M, whose goal was to beat CodeGen-350M-mono with under 350M
+parameters. theOG-50M v3 does it on all three benchmarks: `/no_think`, greedy, it scores 26/30 on graded-30 (CodeGen 19/30), 42/164 on
 HumanEval (CodeGen 22/164) and 91/500 on MBPP-500 (CodeGen 87/500). Source:
 [theOG-50M model card](https://huggingface.co/DrunkkToys/theOG-50M).
 
 ## Lessons
 
-| # | lesson | code |
+| # | lesson | you write |
 |---|---|---|
 | 0 | [What we're building](lessons/00-what-we-build/README.md) | — |
-| 1 | [The tokenizer](lessons/01-tokenizer/README.md) | `theog/tokenizer.py`, `theog/tokens.py` |
-| 2 | [The data](lessons/02-data/README.md) | `theog/data.py`, `theog/contamination.py` |
-| 3 | [The chat format and packing](lessons/03-format-and-packing/README.md) | `theog/format.py`, `theog/pack.py` |
-| 4 | [The model](lessons/04-model/README.md), in 8 steps: embedding, RMSNorm, attention, heads + QK-norm, RoPE, SwiGLU, block, whole model | `theog/model.py` |
-| 5 | [Training](lessons/05-training/README.md) | `theog/train.py`, `theog/generate.py` |
-| 6 | [The /think span](lessons/06-think-span/README.md) | `theog/format.py` |
-| 7 | [Evaluation](lessons/07-evaluation/README.md) | `theog/evaluate.py` |
-| 8 | [Export to GGUF and Ollama](lessons/08-export/README.md) | `theog/export.py` |
-| 9 | [Publishing](lessons/09-publish/README.md) | — |
+| 1 | [The tokenizer](lessons/01-tokenizer/README.md) | BPE by hand, then the real tokenizer |
+| 2 | [The data](lessons/02-data/README.md) | cleaning rules, dedup, naming the function, the contamination check |
+| 3 | [The chat format and packing](lessons/03-format-and-packing/README.md) | one training sequence with its labels, the packer |
+| 4 | [The model](lessons/04-model/README.md), in 8 steps | RMSNorm, attention, RoPE, heads, SwiGLU, block, whole model |
+| 5 | [Training](lessons/05-training/README.md) | the LR schedule, the loss, the sampler, the prompt, generation |
+| 6 | [The /think span](lessons/06-think-span/README.md) | nothing new: an experiment |
+| 7 | [Evaluation](lessons/07-evaluation/README.md) | answer extraction, the sandboxed test runner |
+| 8 | [Export to GGUF and Ollama](lessons/08-export/README.md) | the weight mapping, the Modelfile |
+| 9 | [Publishing](lessons/09-publish/README.md) | your model card |
 
-## Setup
+## Start
 
 Python 3.12 and [uv](https://docs.astral.sh/uv/):
 
 ```bash
+git clone https://github.com/DrunkkToys/DrunkkInference
+cd DrunkkInference
 uv sync --extra dev --extra export
+uv run python -m theog.progress
 ```
 
-```bash
-uv run pytest
-```
+Every lesson shows "to do". Open [lesson 0](lessons/00-what-we-build/README.md). The full working
+code is on the [`solutions`](https://github.com/DrunkkToys/DrunkkInference/tree/solutions) branch,
+for when you're stuck.
 
-The tests use a tiny model and toy data and run on a CPU.
+## The whole pipeline, laptop track
 
-## The whole pipeline
-
-Lesson 2 needs about 7 GB of disk for the download. Lesson 5 needs an NVIDIA (CUDA) or Apple silicon
-(MPS) GPU.
+Once your code passes the tests, these commands are the course. About 200 MB of disk and an Apple
+silicon Mac or an NVIDIA GPU (a CPU works, slowly).
 
 ```bash
-uv run python -m theog.data download --raw data/raw
+uv run python -m theog.data download --raw data/raw --parts 1
 uv run python -m theog.data build --raw data/raw --out data/rows.jsonl
 uv run python -m theog.contamination --rows data/rows.jsonl --out data/rows.clean.jsonl
-uv run python -m theog.tokenizer --rows data/rows.clean.jsonl --out data/tokenizer.json
-uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokenizer.json --out data/packed
-uv run python -m theog.train --packed data/packed --out runs/theog-50m
-uv run python -m theog.evaluate --ckpt runs/theog-50m/best.pt --tokenizer data/tokenizer.json --dataset humaneval --out results/ --temperature 0.2
-uv run python -m theog.evaluate --ckpt runs/theog-50m/best.pt --tokenizer data/tokenizer.json --dataset mbpp500 --out results/ --temperature 0.2
-uv run --extra export python -m theog.export --ckpt runs/theog-50m/best.pt --tokenizer data/tokenizer.json --out release/theog-50m-Q8_0.gguf --quant Q8_0
-ollama create theog:no_think -f release/Modelfile.no_think
+uv run python -m theog.tokenizer --rows data/rows.clean.jsonl --out data/tokenizer.json --vocab-size 8000
+uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokenizer.json --out data/packed --seq-len 512
+uv run python -m theog.train --packed data/packed --out runs/laptop --preset laptop --batch-size 16 --accum 1 --lr 1e-3 --eval-every 500 --eval-windows 200 --log-every 250
+uv run python -m theog.evaluate --ckpt runs/laptop/best.pt --tokenizer data/tokenizer.json --dataset humaneval --out results/
+uv run python -m theog.evaluate --ckpt runs/laptop/best.pt --tokenizer data/tokenizer.json --dataset mbpp500 --out results/
+uv run --extra export python -m theog.export --ckpt runs/laptop/best.pt --tokenizer data/tokenizer.json --out release/laptop-Q8_0.gguf --quant Q8_0
+ollama create mymodel -f release/Modelfile.no_think
 ```
+
+**Full track:** drop `--parts`, `--vocab-size` and `--seq-len`, train with only `--packed` and
+`--out` (the defaults are theOG-50M's), and expect about 7 GB of disk and days of GPU time.
 
 ## Data
 

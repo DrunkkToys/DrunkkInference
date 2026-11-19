@@ -3,9 +3,9 @@ import json
 import numpy as np
 from tokenizers import Tokenizer
 
-from theog.format import prompt_ids, sequence
-from theog.pack import load, pack, split_of
-from theog.tokens import ANSWER, ANSWER_CLOSE, ASSISTANT, END, IGNORE, THINK, THINK_CLOSE, USER
+from theog.format import sequence
+from theog.pack import Packer, load, pack, split_of
+from theog.tokens import ANSWER, ANSWER_CLOSE, ASSISTANT, END, IGNORE, PAD, THINK, THINK_CLOSE, USER
 
 
 def test_sequence_layout_and_labels(tokenizer_file):
@@ -20,11 +20,25 @@ def test_sequence_layout_and_labels(tokenizer_file):
     assert lbl[-1] == IGNORE
 
 
-def test_prompt_ids_match_training_prefix(tokenizer_file):
+def test_think_text_is_learned(tokenizer_file):
     tok = Tokenizer.from_file(str(tokenizer_file))
-    s = sequence(tok, "Add one.", "def f(x):\n    return x + 1")
-    p = prompt_ids(tok, "Add one.")
-    assert s["input_ids"][:len(p)] == p
+    s = sequence(tok, "Add one.", "def f(x):\n    return x + 1", think_text="add 1")
+    ids, lbl = s["input_ids"], s["labels"]
+    t, tc = ids.index(THINK), ids.index(THINK_CLOSE)
+    assert tc > t + 1                                   # the think text sits between the markers
+    assert all(lbl[i] == ids[i + 1] for i in range(t, tc))
+
+
+def test_packer_pads_and_masks_the_tail(tmp_path):
+    p = Packer(tmp_path, "train", seq_len=8)
+    p.add([1, 10, 11], [IGNORE, 11, 2])
+    p.add([1, 12, 13], [IGNORE, 13, 2])
+    p.add([1, 14, 15], [IGNORE, 15, 2])                  # does not fit: the first window is written
+    p.close()
+    ids = np.fromfile(tmp_path / "train_ids.bin", dtype=np.int16).reshape(-1, 8)
+    lbl = np.fromfile(tmp_path / "train_labels.bin", dtype=np.int16).reshape(-1, 8)
+    assert ids.tolist() == [[1, 10, 11, 1, 12, 13, PAD, PAD], [1, 14, 15, PAD, PAD, PAD, PAD, PAD]]
+    assert lbl[0, 6:].tolist() == [IGNORE, IGNORE]
 
 
 def test_pack_never_splits_a_row(rows_file, tokenizer_file, tmp_path):
@@ -45,3 +59,5 @@ def test_long_rows_are_dropped_not_cut(tokenizer_file, tmp_path):
 
 def test_split_is_by_prompt():
     assert split_of("same task") == split_of("same task ")
+    sides = [split_of(f"task {i}") for i in range(2000)]
+    assert 40 < sides.count("val") < 160                 # about 5%

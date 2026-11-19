@@ -20,8 +20,13 @@ _WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|\d+|[^\sA-Za-z0-9_]")
 
 
 def grams(text: str, n: int = N) -> set[tuple]:
-    words = _WORD.findall(text)
-    return {tuple(words[i:i + n]) for i in range(len(words) - n + 1)}
+    """Every run of n consecutive words of `text`, as a set of tuples.
+    A word is what _WORD matches: a name, a number or one punctuation mark.
+    """
+    # EXERCISE 2.5: lessons/02-data/README.md
+    # Hint: words = _WORD.findall(text), then a set comprehension over
+    #       range(len(words) - n + 1).
+    raise NotImplementedError("exercise 2.5: write grams")
 
 
 class Index:
@@ -37,12 +42,13 @@ class Index:
                     self.where[x].add(key)
 
     def hits(self, text: str) -> list[str]:
-        """Benchmark texts that `text` covers to THRESHOLD or more."""
-        count = Counter()
-        for x in grams(text):
-            for key in self.where.get(x, ()):
-                count[key] += 1
-        return [k for k, c in count.items() if c / self.size[k] >= THRESHOLD]
+        """Benchmark texts that `text` covers to THRESHOLD or more: the keys k
+    where (13-grams of `text` that belong to k) / self.size[k] >= THRESHOLD.
+        """
+        # EXERCISE 2.6: lessons/02-data/README.md
+        # Hint: self.where maps a gram to the keys it belongs to. Count hits per key
+        #       with a Counter.
+        raise NotImplementedError("exercise 2.6: write Index.hits")
 
 
 def benchmark_texts() -> dict[str, str]:

@@ -25,7 +25,7 @@ from theog import model as M
 from theog.pack import load
 from theog.tokens import IGNORE
 
-PRESETS = {"theog_50m": M.theog_50m, "tiny": M.tiny}
+PRESETS = {"theog_50m": M.theog_50m, "laptop": M.laptop, "tiny": M.tiny}
 
 
 def pick_device() -> torch.device:
@@ -37,15 +37,24 @@ def pick_device() -> torch.device:
 
 
 def lr_factor(update: int, total: int, warmup: int) -> float:
-    """0 -> 1 linearly over `warmup` updates, then a cosine from 1 down to 0.1."""
-    if update < warmup:
-        return update / warmup
-    progress = (update - warmup) / max(1, total - warmup)
-    return 0.10 + 0.90 * 0.5 * (1 + math.cos(math.pi * progress))
+    """Multiplier of the peak learning rate at optimizer update `update`:
+    0 -> 1 in a straight line over `warmup` updates, then a cosine from 1 down
+    to 0.1 at update `total`.
+    """
+    # EXERCISE 5.2: lessons/05-training/README.md
+    # Hint: progress = (update - warmup) / max(1, total - warmup);
+    #       0.1 + 0.9 * 0.5 * (1 + cos(pi * progress)).
+    raise NotImplementedError("exercise 5.2: write lr_factor")
 
 
 def loss_fn(logits, labels):
-    return F.cross_entropy(logits.reshape(-1, logits.size(-1)).float(), labels.reshape(-1), ignore_index=IGNORE)
+    """Mean cross-entropy over every position whose label is not IGNORE.
+    logits: (B, T, vocab), labels: (B, T).
+    """
+    # EXERCISE 5.1: lessons/05-training/README.md
+    # Hint: F.cross_entropy wants (N, vocab) and (N,): reshape both. It has an
+    #       ignore_index argument. Call .float() on the logits.
+    raise NotImplementedError("exercise 5.1: write loss_fn")
 
 
 def batch(ids, lbl, rows, device):
@@ -146,6 +155,8 @@ def train(packed: Path, out: Path, preset: str = "theog_50m", batch_size: int = 
             print(f"eval step {step:,}: val loss {val:.4f} (best {best:.4f}){mark}", flush=True)
     save(out / "final.pt", steps)
     val = evaluate(model, va_ids, va_lbl, eval_windows, batch_size, device)
+    if val < best:  # the last steps, at the smallest learning rate, are often the best
+        save(out / "best.pt", steps)
     print(f"done: {steps:,} steps in {time.time() - t0:,.0f}s | final val loss {val:.4f}", flush=True)
     return {"steps": steps, "final_val": val, "best_val": min(best, val)}
 

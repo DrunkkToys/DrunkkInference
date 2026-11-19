@@ -37,9 +37,12 @@ _WS = re.compile(r"\s+")
 
 # ── download ──────────────────────────────────────────────────────────────
 
-def download(raw: Path) -> None:
+def download(raw: Path, parts: int = 0) -> None:
+    """Every file of every source, or only the first `parts` files of each
+    (the laptop track uses --parts 1)."""
     from huggingface_hub import hf_hub_download
     for name, (repo, rev, files, licence) in SOURCES.items():
+        files = files[:parts or None]
         print(f"{repo} @ {rev[:8]} ({licence}): {len(files)} file(s)", flush=True)
         for f in files:
             hf_hub_download(repo, f, repo_type="dataset", revision=rev, local_dir=raw / name)
@@ -142,33 +145,55 @@ def _drop_docstring(body: list) -> list:
 
 
 def solution_only(code: str) -> str | None:
-    """The solution without driver code, docstrings or comments.
+    """The solution without driver code, docstrings or comments, or None
+    when `code` is not Python 3 or defines no function or class.
 
-    Top level keeps imports, functions, classes and constants; prints, calls,
-    loops and `if __name__ == "__main__":` go (they are usage examples, not the
-    answer). ast.unparse writes the code back in one canonical style, which
-    also drops every comment."""
-    tree = parse(code)
-    if tree is None:
-        return None
-    tree.body = [n for n in _drop_docstring(tree.body) if isinstance(n, _KEEP)]
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            node.body = _drop_docstring(node.body)
-    if not _defines(tree):
-        return None
-    return ast.unparse(tree)
+    Top level keeps only the node types in _KEEP (imports, functions, classes,
+    constants). Docstrings go from the module and from every def/class.
+    ast.unparse writes the code back, which also drops every comment.
+    """
+    # EXERCISE 2.1: lessons/02-data/README.md
+    # Hint: tree = parse(code). Filter tree.body with isinstance(n, _KEEP) after
+    #       _drop_docstring. Then ast.walk(tree) and _drop_docstring every def/class
+    #       body. Check _defines(tree) before returning ast.unparse(tree).
+    raise NotImplementedError("exercise 2.1: write solution_only")
 
 
 def answer_in_prompt(user: str, answer: str, min_len: int = 20) -> bool:
-    """True when a real line of the answer is already written in the prompt:
-    the model would learn to copy, not to solve."""
-    prompt = _WS.sub(" ", user)
-    for line in answer.splitlines():
-        s = _WS.sub(" ", line).strip()
-        if len(s) >= min_len and not s.startswith(("def ", "class ", "import ", "from ", "@")) and s in prompt:
-            return True
-    return False
+    """True when a real line of the answer (at least `min_len` characters,
+    whitespace collapsed, not a def/class/import/decorator line) appears in the
+    prompt: the model would learn to copy, not to solve.
+    """
+    # EXERCISE 2.2: lessons/02-data/README.md
+    # Hint: Collapse whitespace with _WS.sub(' ', ...) on both sides, then check
+    #       each answer line with `in`.
+    raise NotImplementedError("exercise 2.2: write answer_in_prompt")
+
+
+def function_name(answer: str, entry_point: str = "") -> str:
+    """The name the tests call: the row's entry_point, else the first def or
+    class at the top level of the answer."""
+    if entry_point:
+        return entry_point
+    for node in ast.parse(answer).body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            return node.name
+    return ""
+
+
+def with_tests(user: str, answer: str, entry_point: str, tests: str, n: int = 3) -> str:
+    """The prompt, plus up to n of the row's own assert lines when the prompt
+    never says what the function is called:
+
+        user + "\nYour code should pass these tests:\n\n" + the asserts, one per line
+
+    Only lines that start with "assert" and mention the name count. The name is
+    function_name(answer, entry_point). Name already in the prompt, or no such
+    assert: return the prompt unchanged.
+    """
+    # EXERCISE 2.4: lessons/02-data/README.md
+    # Hint: t.strip() for each line of tests.splitlines(). Keep the first n.
+    raise NotImplementedError("exercise 2.4: write with_tests")
 
 
 def clean(row: dict, drops: Counter) -> dict | None:
@@ -225,20 +250,14 @@ class Dedup:
         self.max = max_per_skeleton
 
     def keep(self, row: dict, drops: Counter) -> bool:
-        p, a, s = sha(row["user"]), sha(row["answer"]), skeleton(row["answer"])
-        if p in self.prompts:
-            drops["duplicate prompt"] += 1
-            return False
-        if a in self.answers:
-            drops["duplicate answer"] += 1
-            return False
-        if self.shapes[s] >= self.max:
-            drops[f"more than {self.max} rows with the same solution shape"] += 1
-            return False
-        self.prompts.add(p)
-        self.answers.add(a)
-        self.shapes[s] += 1
-        return True
+        """True if the row is kept. Drop it (and count why in `drops`) when its
+    prompt or its answer was seen before, or when MAX_PER_SKELETON rows with
+    the same solution shape are already kept. Otherwise remember all three.
+        """
+        # EXERCISE 2.3: lessons/02-data/README.md
+        # Hint: Use sha(row['user']), sha(row['answer']) and skeleton(row['answer']).
+        #       The drop reasons the tests read: 'duplicate prompt', 'duplicate answer'.
+        raise NotImplementedError("exercise 2.3: write Dedup.keep")
 
 
 def build(raw: Path, out: Path, limit: int = 0) -> Counter:
@@ -254,6 +273,8 @@ def build(raw: Path, out: Path, limit: int = 0) -> Counter:
                 row = clean(row, drops)
                 if row is None or not dedup.keep(row, drops):
                     continue
+                # after dedup, which must compare the tasks, not their test lists
+                row["user"] = with_tests(row["user"], row["answer"], row["entry_point"], row["tests"])
                 w.write(json.dumps(row, ensure_ascii=False) + "\n")
                 kept[row["source"]] += 1
     part.rename(out)
@@ -269,13 +290,14 @@ def main() -> None:
     sub = ap.add_subparsers(dest="cmd", required=True)
     d = sub.add_parser("download")
     d.add_argument("--raw", type=Path, required=True)
+    d.add_argument("--parts", type=int, default=0, help="first N files per source (0 = all); the laptop track uses 1")
     b = sub.add_parser("build")
     b.add_argument("--raw", type=Path, required=True)
     b.add_argument("--out", type=Path, required=True)
     b.add_argument("--limit", type=int, default=0, help="rows read per source (0 = all), for a quick sample")
     a = ap.parse_args()
     if a.cmd == "download":
-        download(a.raw)
+        download(a.raw, a.parts)
     else:
         build(a.raw, a.out, a.limit)
 

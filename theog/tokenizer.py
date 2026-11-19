@@ -16,25 +16,68 @@ from theog.tokens import SPECIAL_TOKENS
 VOCAB_SIZE = 16_000
 
 
+# ── BPE by hand (lesson 1, part 1) ────────────────────────────────────────
+# Slow but readable. The real tokenizer below uses the Rust `tokenizers`
+# library, which runs the same algorithm thousands of times faster.
+
+def most_frequent_pair(ids: list[int]) -> tuple[int, int] | None:
+    """The pair of neighbouring ids that occurs most often, or None when
+    there are fewer than two ids. On a tie, the pair seen first wins.
+
+    most_frequent_pair([1, 2, 3, 1, 2]) == (1, 2)
+    """
+    # EXERCISE 1.1: lessons/01-tokenizer/README.md
+    # Hint: zip(ids, ids[1:]) gives every neighbouring pair. Count them in a dict;
+    #       max(counts, key=counts.get) returns the first key with the top count.
+    raise NotImplementedError("exercise 1.1: write most_frequent_pair")
+
+
+def merge(ids: list[int], pair: tuple[int, int], new_id: int) -> list[int]:
+    """Replace every occurrence of `pair`, left to right, with `new_id`.
+
+    merge([1, 2, 3, 1, 2], (1, 2), 99) == [99, 3, 99]
+    merge([7, 7, 7], (7, 7), 50) == [50, 7]
+    """
+    # EXERCISE 1.2: lessons/01-tokenizer/README.md
+    # Hint: Walk with an index i. If ids[i], ids[i + 1] is the pair, append new_id
+    #       and jump 2; otherwise append ids[i] and step 1.
+    raise NotImplementedError("exercise 1.2: write merge")
+
+
+def bpe_by_hand(text: str, n_merges: int) -> tuple[list[int], dict[int, bytes]]:
+    """Start from the UTF-8 bytes of `text` and do `n_merges` merges.
+    Returns (final ids, vocab) where vocab[id] is the bytes that id stands for.
+    Ids 0-255 are the single bytes; merge number k gets id 256 + k.
+    """
+    # EXERCISE 1.3: lessons/01-tokenizer/README.md
+    # Hint: list(text.encode('utf-8')) gives the starting ids. For each new id:
+    #       find the most frequent pair, merge it, and record
+    #       vocab[new_id] = vocab[a] + vocab[b]. Stop early if there is no pair.
+    raise NotImplementedError("exercise 1.3: write bpe_by_hand")
+
+
+# ── the real tokenizer (lesson 1, part 2) ─────────────────────────────────
+
 def build_tokenizer() -> Tokenizer:
-    """An empty byte-level BPE: GPT-2's split regex, every byte representable."""
-    tok = Tokenizer(models.BPE())
-    tok.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False, use_regex=True)
-    tok.decoder = decoders.ByteLevel()
-    return tok
+    """An empty byte-level BPE tokenizer: GPT-2's split regex, every byte
+    representable, and a decoder that turns byte-level tokens back into text.
+    """
+    # EXERCISE 1.4: lessons/01-tokenizer/README.md
+    # Hint: Tokenizer(models.BPE()), then set .pre_tokenizer to
+    #       pre_tokenizers.ByteLevel(add_prefix_space=False, use_regex=True)
+    #       and .decoder to decoders.ByteLevel().
+    raise NotImplementedError("exercise 1.4: write build_tokenizer")
 
 
 def train(texts: Iterable[str], vocab_size: int = VOCAB_SIZE, min_frequency: int = 2) -> Tokenizer:
-    tok = build_tokenizer()
-    trainer = trainers.BpeTrainer(
-        vocab_size=vocab_size,
-        min_frequency=min_frequency,
-        special_tokens=SPECIAL_TOKENS,                      # ids 0..8, in order
-        initial_alphabet=pre_tokenizers.ByteLevel.alphabet(),  # all 256 bytes
-        show_progress=False,
-    )
-    tok.train_from_iterator(texts, trainer=trainer)
-    return tok
+    """Train build_tokenizer() on `texts`. SPECIAL_TOKENS must get ids 0-8,
+    in order, and all 256 bytes must be in the vocabulary from the start.
+    """
+    # EXERCISE 1.5: lessons/01-tokenizer/README.md
+    # Hint: trainers.BpeTrainer(vocab_size=..., min_frequency=...,
+    #       special_tokens=SPECIAL_TOKENS, initial_alphabet=pre_tokenizers.ByteLevel.alphabet(),
+    #       show_progress=False), then tok.train_from_iterator(texts, trainer=trainer).
+    raise NotImplementedError("exercise 1.5: write train")
 
 
 def row_texts(path: Path) -> Iterator[str]:
