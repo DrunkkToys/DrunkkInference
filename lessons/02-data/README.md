@@ -11,6 +11,12 @@ capacity for broken examples, duplicates, or tasks whose answer is already writt
 Most of the work on theOG went into this step, and most of what makes a small model good or bad is
 decided here, not in lesson 4.
 
+This is the Phi approach ([Gunasekar et al., 2023, "Textbooks Are All You Need"](https://arxiv.org/abs/2306.11644)):
+a small set of clean tasks a model can learn from beats a much bigger pile of scraped code. The
+other well-known rule, Chinchilla's 20 tokens per parameter, assumes every token is worth the same,
+and these rules exist because they aren't. Lesson 5 shows the second half of the Phi approach:
+reading that clean set more than once.
+
 ## What one row looks like
 
 ```json
