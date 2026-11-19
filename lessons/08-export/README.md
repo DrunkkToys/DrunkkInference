@@ -122,7 +122,7 @@ uv run --extra export python -m theog.export --ckpt runs/laptop/best.pt \
 ```
 
 ```text
-release/laptop-Q8_0.gguf  Q8_0  sha256 9737385c0206f6687a404a305db218e9a07378e849dd4dbc6ea988c09bf44765
+release/laptop-Q8_0.gguf  Q8_0  sha256 7ae69bb0bae1a0e31f95edd49836eba3491f3f1483df247c79bc268b5a6aa5d9
 release/Modelfile.no_think  ->  ollama create theog:no_think -f release/Modelfile.no_think
 release/Modelfile.think  ->  ollama create theog:think -f release/Modelfile.think
 ```
@@ -143,10 +143,23 @@ ollama run mymodel "Write a function that checks if a string is a palindrome."
 
 ````text
 ```python
-def is_palindrome_string(s):
+def is_palindrome(s):
     return s == s[::-1]
+
+def is_palindrome(s):
+    return s == s[::-1]
+
+def is_palindrome(s):
+    return is_palindrome(s) and is_palindrome(s)
+
+def is_palindrome(s):
+    return is_palindrome(s) and is_palindrome(s)
 ```
 ````
+
+That's the answer lesson 5 got from PyTorch, repeats and all: a correct function, then copies, and
+the last copy calls itself forever. Good: the file is your model, flaws included. Exporting doesn't
+fix it and doesn't add to it.
 
 No Python, no repo: this runs anywhere Ollama runs. Delete it with `ollama rm mymodel`.
 
@@ -187,8 +200,8 @@ exported file. The course model never had them, so for you `tensors()` covers ev
    tokenizer (8,000 tokens and their merges), the chat template, and the float32 norm weights.
 2. Nothing complains. q and k have the same shape (256 × 256), so the file is perfectly valid. It's
    a different model, though: every score becomes "my key against your query" instead of the other
-   way round. Asked for a palindrome check, at temperature 0, ours wrote `def` and then `map`
-   over and over until the token limit. That's why the greedy comparison above is worth doing:
+   way round. Asked for a palindrome check, at temperature 0, ours wrote `python)): 0}`, a row of
+   dashes, then spaces until Ollama stopped it ("token repeat limit reached"). That's why the greedy comparison above is worth doing:
    it's the only check that catches this.
 3. LM Studio uses the Jinja `CHAT_TEMPLATE` from the file, so a message ending in `/think` opens
    the span. If it shows control tokens, you should see `<|/Think|><|Answer|>` at the start of the

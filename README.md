@@ -8,7 +8,7 @@ fails until your code is right.
 The course is for Python developers who are new to machine learning. No pretrained weights, no
 borrowed tokenizer, no framework beyond PyTorch.
 
-**Two tracks.** The laptop track trains an 8.3M-parameter model in about 35 minutes on an M2
+**Two tracks.** The laptop track trains an 8.3M-parameter model in about 50 minutes on an M2
 MacBook Air. The full track runs the same commands at theOG-50M's size, on a GPU, for days. Start
 with the laptop track.
 
