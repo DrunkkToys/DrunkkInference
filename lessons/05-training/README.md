@@ -3,7 +3,7 @@
 **You write:** the learning-rate schedule, the loss, the sampler, the prompt, and the generation
 loop.
 **You get:** a trained model, `runs/laptop/best.pt`, that writes Python. **Time:** about 30 minutes
-of work and 35 minutes of training.
+of work and about 50 minutes of training.
 
 Training repeats four steps thousands of times:
 
@@ -47,7 +47,7 @@ graded.
 ## The learning rate
 
 The **learning rate** is how big each step is. Too big and the loss jumps around or explodes; too
-small and nothing happens in 35 minutes. And the best size changes during the run:
+small and nothing happens in 50 minutes. And the best size changes during the run:
 
 - **Warmup.** At the start the weights are random and the gradients point in noisy directions. A
   big step in a wrong direction is hard to undo. So start at 0 and grow in a straight line over
@@ -94,7 +94,7 @@ These are theOG-50M v3's settings, already in `train()`:
 | full track | peak lr 3e-4, batch 4 windows × 8 accumulation × 2048 tokens | 65,536 tokens per update |
 | laptop track | peak lr 1e-3, batch 16 × 512 tokens, no accumulation | 8,192 tokens per update |
 
-The laptop model is smaller, so it tolerates a bigger learning rate, and with 35 minutes there's no
+The laptop model is smaller, so it tolerates a bigger learning rate, and with 50 minutes there's no
 time for small steps.
 
 **Gradient accumulation.** A GPU may not fit 32 windows of 2048 at once. So the loop runs 8
@@ -130,24 +130,24 @@ uv run python -m theog.train --packed data/packed --out runs/laptop --preset lap
 ```
 
 ```text
-laptop: 8,343,552 params on mps | 44,907 train windows (17,574,904 tokens) | 2,807 steps = 2,807 updates
-step       0/2,807 | loss 9.0207 | lr 7.14e-06 | 1s
-step     250/2,807 | loss 2.4165 | lr 9.96e-04 | 173s
-step     500/2,807 | loss 1.6854 | lr 9.60e-04 | 348s
-eval step 500: val loss 1.5889 (best 1.5889) *best*
+laptop: 8,343,552 params on mps | 58,052 train windows (21,991,017 tokens) | 3,629 steps = 3,629 updates
+step       0/3,629 | loss 9.0633 | lr 5.52e-06 | 1s
+step     250/3,629 | loss 2.6924 | lr 9.99e-04 | 181s
+step     500/3,629 | loss 1.5846 | lr 9.81e-04 | 397s
+eval step 500: val loss 1.6776 (best 1.6776) *best*
 ...
-eval step 2,000: val loss 0.6181 (best 0.6181) *best*
-eval step 2,500: val loss 0.5418 (best 0.5418) *best*
-done: 2,807 steps in 2,164s | final val loss 0.5177
+eval step 3,000: val loss 0.4878 (best 0.4878) *best*
+eval step 3,500: val loss 0.4561 (best 0.4561) *best*
+done: 3,629 steps in 2,859s | final val loss 0.4494
 ```
 
-36 minutes on an M2 MacBook Air (`mps` is Apple's GPU). The first loss is 9.02, right where a
-uniform guess over 8,000 tokens would be. In the first 250 steps it falls to 2.4: the model learns
+48 minutes on an M2 MacBook Air (`mps` is Apple's GPU). The first loss is 9.06, right where a
+uniform guess over 8,000 tokens would be. In the first 250 steps it falls to 2.7: the model learns
 the format, the indentation, the commonest words. After that every step buys less.
 
 The training loss on single batches jumps around (one batch has easy rows, the next hard ones).
 Watch the validation loss, measured on the same 200 windows every time: it falls at every
-check.
+check. The final weights scored best of all, so `best.pt` is the model after the last step.
 
 Leave it running and do the next two exercises meanwhile. If you stop it, run the same command
 again and it resumes.
@@ -265,48 +265,86 @@ you in lesson 8.
 
 ```bash
 uv run python -m theog.generate --ckpt runs/laptop/best.pt --tokenizer data/tokenizer.json \
-    "Write a function that checks if a string is a palindrome."
+    --temperature 0 "Write a function that checks if a string is a palindrome."
 ```
 
 ````text
 
 ```python
-def is_palindrome_string(s):
-    s = s.replace(' ', '').lower()
+def is_palindrome(s):
     return s == s[::-1]
+
+def is_palindrome(s):
+    return s == s[::-1]
+
+def is_palindrome(s):
+    return is_palindrome(s) and is_palindrome(s)
+
+def is_palindrome(s):
+    return is_palindrome(s) and is_palindrome(s)
 ```
 ````
 
-Correct, and it even ignores spaces and case. Now a harder one:
+The first function is right. Then the model didn't stop: it wrote it again, then twice more with a
+version that calls itself forever. In Python the last definition wins, so this answer fails. Knowing
+when to stop is one of the last things a small model learns.
+
+Now give it the task the way MBPP does, and the way exercise 2.4 taught it, with a test that
+names the function:
 
 ```bash
-uv run python -m theog.generate --ckpt runs/laptop/best.pt --tokenizer data/tokenizer.json \
-    "Write a function that returns the n-th Fibonacci number."
+uv run python -m theog.generate --ckpt runs/laptop/best.pt --tokenizer data/tokenizer.json --temperature 0 \
+    "Write a function that returns the n-th Fibonacci number.
+Your code should pass these tests:
+
+assert fib(10) == 55"
 ```
 
 ````text
 
 ```python
-def fib_list(n):
-    if n <= 0:
+def fib(n):
+    if n == 0:
         return 0
     elif n == 1:
         return 1
     else:
-        return fib_list(n - 1) + fib_list(n - 2)
+        a, b = (0, 1)
+        for _ in range(2, n + 1):
+            a, b = (b, a + b)
+        return b
 ```
 ````
 
-Correct too, but called `fib_list`, a name it picked up from some training row. A test calling
-`fib(10)` would fail with "no function named fib". You'll see this in lesson 7.
+Correct, iterative, and called `fib`, the name in the test. Without the test line it wrote a
+function called `matrix_power` that has nothing to do with Fibonacci.
 
-Your output will differ: at temperature 0.2 the sampler draws. `--temperature 0` gives the same
-answer every time.
+Right name doesn't mean right answer:
+
+````text
+Write a function to reverse the words in a string.
+Your code should pass these tests:
+
+assert reverse_words("hello world") == "world hello"
+
+```python
+def reverse_words(s):
+    words = s.split()
+    reversed_words = [word[::-1] for word in words]
+    return ' '.join(reversed_words)
+```
+````
+
+It reverses the letters of each word (`"olleh dlrow"`), a different, common task. Code that runs
+but does the wrong thing is now the laptop model's commonest failure. Lesson 7 counts it.
+
+`--temperature 0` gives the same answer every time. Leave it out (the default is 0.2) and the
+sampler draws, so your output will vary.
 
 ## How this differs from theOG's own run
 
 Same recipe and same model layout. theOG-50M v3 trained on 2.49B tokens from 12 public sources; the
-published checkpoint is step 346,000 (model card). The laptop track sees 17.6M tokens, about 0.7%
+published checkpoint is step 346,000 (model card). The laptop track sees 22M tokens, about 0.9%
 of that, on a model a sixth the size.
 
 ## Going further
@@ -317,11 +355,11 @@ of that, on a model a sixth the size.
 
 <details><summary>Answers</summary>
 
-1. On the laptop run it never really flattens. Validation loss went 1.59, 1.06, 0.77, 0.62, 0.54,
-   0.52: still falling at the end, mostly slowed by the shrinking learning rate. That means the
+1. On the laptop run it never really flattens. Validation loss went 1.68, 1.12, 0.85, 0.67, 0.55,
+   0.49, 0.46, and 0.45 at the end: still falling, mostly slowed by the shrinking learning rate. That means the
    model would learn more from more data or more steps. On the full track the curve flattens much
    later, and that's where theOG's 2.49B tokens come in.
-2. With 17.6M tokens, a second pass would probably still lower the validation loss: the model is
+2. With 22M tokens, a second pass would probably still lower the validation loss: the model is
    small and hasn't memorised anything yet. Run `--epochs 2` into a new `--out` and compare the val
    loss and the lesson 7 score. The risk with many epochs is that the model starts memorising the
    training answers: the training loss keeps falling while the validation loss stops or rises.
