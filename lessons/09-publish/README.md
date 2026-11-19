@@ -39,7 +39,7 @@ Harness: `theog.evaluate`, which passes 164/164 and 498/500 reference solutions.
 
 ## Training
 
-<rows> rows, <tokens> tokens (data/packed/meta.json), one epoch, <steps> steps, <minutes> on <hardware>.
+<rows> rows, <tokens> tokens (data/packed/meta.json), <epochs> epochs, <steps> steps, <minutes> on <hardware>.
 Final validation loss <loss>.
 
 ## Data and licences

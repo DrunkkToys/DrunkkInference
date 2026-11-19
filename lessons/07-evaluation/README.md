@@ -149,17 +149,18 @@ Each task prints one line as it goes:
 ```text
 [  1/500] Mbpp/11          FAIL  assert failed: assert remove_Occ("hello","l") == "heo"
 [  2/500] Mbpp/12          FAIL  assert failed: assert sort_matrix([[1, 2, 3], [2, 4, 5], [1, 1, 1]])==[[1, 1, 1], [1, 2, 3], [2, 4, 5]]
-[  3/500] Mbpp/13          FAIL  code does not run: SyntaxError: '(' was never closed (<string>, line 5)
-[  4/500] Mbpp/14          FAIL  no function named find_Volume
+[  3/500] Mbpp/13          FAIL  assert failed: assert count_common(['red','green','black','pink', ...
+[  4/500] Mbpp/14          FAIL  code does not run: SyntaxError: expected '(' (<string>, line 1)
 ...
-[ 52/500] Mbpp/62          PASS  all tests pass
+[  9/500] Mbpp/19          PASS  all tests pass
 ...
-mbpp500: 19/500 passed  ->  results/laptop_mbpp500_no_think_t0.0_20261119T124132.jsonl
+mbpp500: 49/500 passed  ->  results/laptop_mbpp500_no_think_t0.0_20261119T183447.jsonl
 ```
 
-**These are the scores of this course's laptop run:** **2/164** on HumanEval (HumanEval/35 and
-HumanEval/53) and **19/500** on MBPP. An earlier run, trained before exercise 2.4 existed, scored
-1/164 and 3/500. Yours should land within a few tasks of ours. Don't read the score first: read
+**These are the scores of this course's laptop run, 3 epochs:** **8/164** on HumanEval and
+**49/500** on MBPP. The same data read once scored 2/164 and 19/500 (lesson 5 explains the
+difference). An earlier one-epoch run, trained before exercise 2.4 existed, scored 1/164 and 3/500.
+Yours should land within a few tasks of ours. Don't read the score first: read
 *why* it failed. Count the reasons:
 
 ```bash
@@ -170,15 +171,15 @@ print(collections.Counter(r['why'].split(':')[0].split(' named ')[0] for r in ro
 " results/laptop_mbpp500_no_think_t0.0_*.jsonl
 ```
 
-Here are both runs side by side:
+Here are all three runs side by side:
 
-| reason | HumanEval, before 2.4 | HumanEval | MBPP, before 2.4 | MBPP |
-|---|:-:|:-:|:-:|:-:|
-| assert failed: the code runs, the answer is wrong | 118 | 114 | 29 | 227 |
-| no function named …: right idea, wrong name | 13 | 3 | 343 | 81 |
-| code does not run: it doesn't even parse | 17 | 29 | 74 | 67 |
-| TypeError, IndexError, other errors at run time | 15 | 16 | 51 | 106 |
-| passed | 1 | 2 | 3 | 19 |
+| reason | HumanEval, before 2.4 | HumanEval, 1 epoch | HumanEval, 3 epochs | MBPP, before 2.4 | MBPP, 1 epoch | MBPP, 3 epochs |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| assert failed: the code runs, the answer is wrong | 118 | 114 | 109 | 29 | 227 | 247 |
+| no function named …: right idea, wrong name | 13 | 3 | 2 | 343 | 81 | 26 |
+| code does not run: it doesn't even parse | 17 | 29 | 30 | 74 | 67 | 82 |
+| TypeError, IndexError, other errors at run time | 15 | 16 | 15 | 51 | 106 | 96 |
+| passed | 1 | 2 | 8 | 3 | 19 | 49 |
 
 Read the MBPP columns first. Before exercise 2.4, 343 answers never got as far as being wrong: the
 name only appears inside MBPP's asserts, and the model had learned to pick its own. That number was
@@ -190,11 +191,16 @@ every other kind of failure. 16 of those answers were right.
 On HumanEval, where the prompt *is* the function signature, the name was rarely the problem, so the
 fix barely touched it.
 
+The third run changed no data at all, only the number of passes over it. Wrong names fell again,
+from 81 to 26: the model reads the test line better. And 30 more MBPP tasks pass. Most answers still
+fail on "assert failed": three passes taught the model more of the format and the common patterns,
+not yet the arithmetic of each task.
+
 Open the results file to see any answer in full:
 
 ```json
 {"task_id": "Mbpp/11", "passed": false, "why": "assert failed: assert remove_Occ(\"hello\",\"l\") == \"heo\"",
- "code": "def remove_Occ(s, char):\n    if len(s) == 0:\n        return s\n    else:\n        return s[len(s) - 1:len(s) - 1]", "raw": "..."}
+ "code": "def remove_Occ(s: str, char: str) -> str:\n    result = ''\n    for char in s:\n        if char != char:\n            result += char\n    return result", "raw": "..."}
 ```
 
 
@@ -213,7 +219,7 @@ Open the results file to see any answer in full:
    table changes the most?
 3. Your model writes code that *looks* right. Pick five "assert failed" answers and find the bug by
    hand. Is it the algorithm, an edge case, or did it answer a different question?
-4. HumanEval went from 1 to 2 between the two runs. Why is that not a result, when MBPP's 3 to 19 is?
+4. HumanEval went from 1 to 2 between the first two runs. Why is that not a result, when MBPP's 3 to 19 is?
 
 <details><summary>Answers</summary>
 
@@ -221,15 +227,17 @@ Open the results file to see any answer in full:
    "assert failed" and to run-time errors, which is why both went up. The model didn't get worse at
    those tasks; you can finally see how it fails them. That's why you read the whole table, not one
    row.
-2. On our run, `--think` scored 1/164 (HumanEval/55), and none of the three passing tasks passes in
-   both modes. "Code does not run" goes from 29 to 45: with a think span, the model writes more
-   before the answer, and the longer it writes, the more likely it repeats itself and breaks the
-   last copy (you saw that in lesson 6).
+2. On our 3-epoch run, `--think` scored 1/164 (HumanEval/26), against 8/164 without it; only
+   HumanEval/26 passes in both modes. Three epochs helped `/no_think` and did nothing for `/think`.
+   The reason is in lesson 3's `sequence()`: every training row is written in `/no_think` mode, so
+   the model has never seen a prompt ending in `/think`. The more it trains on one mode, the more
+   the other is a prompt it doesn't know. Lesson 6 is about that span.
 3. On our run most bugs are in the algorithm. Mbpp/17 asks for the perimeter of a square and gets
-   `n * (n + 1) ** 2`. Mbpp/11 gets the name and the empty-string case right, then returns an empty
-   slice. The shape is right and the arithmetic isn't. An 8M model trained for 50 minutes has seen
-   too little code to know which arithmetic goes with which words; more data and a bigger model (the
-   full track) is what fixes that.
+   `n * (n + 1) * (n + 1) // 2`. Mbpp/11 has the right name and the right loop, then reuses `char`
+   as the loop variable, so `char != char` is never true and it returns `''`. The shape is right
+   and the details aren't. An 8M model trained on 22M tokens has seen too little code to know which
+   arithmetic goes with which words; more data and a bigger model (the full track) is what fixes
+   that.
 4. Greedy decoding makes each run repeatable, but the model's choice at a near-tie can flip with any
    small change: a retrain, a different seed, a slightly different prompt. One task out of 164 is
    noise. Sixteen out of 500, together with a 262-answer drop in the exact failure the fix targets,
