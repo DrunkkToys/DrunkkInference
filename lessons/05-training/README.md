@@ -3,7 +3,7 @@
 **You write:** the learning-rate schedule, the loss, the sampler, the prompt, and the generation
 loop.
 **You get:** a trained model, `runs/laptop/best.pt`, that writes Python. **Time:** about 30 minutes
-of work and about 50 minutes of training.
+of work and about 2½ hours of training.
 
 Training repeats four steps thousands of times:
 
@@ -47,7 +47,7 @@ graded.
 ## The learning rate
 
 The **learning rate** is how big each step is. Too big and the loss jumps around or explodes; too
-small and nothing happens in 50 minutes. And the best size changes during the run:
+small and nothing happens in the time you have. And the best size changes during the run:
 
 - **Warmup.** At the start the weights are random and the gradients point in noisy directions. A
   big step in a wrong direction is hard to undo. So start at 0 and grow in a straight line over
@@ -94,8 +94,8 @@ These are theOG-50M v3's settings, already in `train()`:
 | full track | peak lr 3e-4, batch 4 windows × 8 accumulation × 2048 tokens | 65,536 tokens per update |
 | laptop track | peak lr 1e-3, batch 16 × 512 tokens, no accumulation | 8,192 tokens per update |
 
-The laptop model is smaller, so it tolerates a bigger learning rate, and with 50 minutes there's no
-time for small steps.
+The laptop model is smaller, so it tolerates a bigger learning rate, and with a couple of hours
+there's no time for small steps.
 
 **Gradient accumulation.** A GPU may not fit 32 windows of 2048 at once. So the loop runs 8
 micro-batches of 4, adds up their gradients (`(loss / accum).backward()`), and updates once. Same
@@ -125,29 +125,68 @@ restarting, and that the trained model writes the start of an answer. It needs e
 Then the real run:
 
 ```bash
-uv run python -m theog.train --packed data/packed --out runs/laptop --preset laptop \
-    --batch-size 16 --accum 1 --lr 1e-3 --eval-every 500 --eval-windows 200 --log-every 250
+uv run python -m theog.train --packed data/packed --out runs/laptop --preset laptop --epochs 3 \
+    --batch-size 16 --accum 1 --lr 1e-3 --eval-every 1000 --eval-windows 200 --log-every 500
 ```
 
 ```text
-laptop: 8,343,552 params on mps | 58,052 train windows (21,991,017 tokens) | 3,629 steps = 3,629 updates
-step       0/3,629 | loss 9.0633 | lr 5.52e-06 | 1s
-step     250/3,629 | loss 2.6924 | lr 9.99e-04 | 181s
-step     500/3,629 | loss 1.5846 | lr 9.81e-04 | 397s
-eval step 500: val loss 1.6776 (best 1.6776) *best*
+laptop: 8,343,552 params on mps | 58,052 train windows (21,991,017 tokens) | 10,885 steps = 10,885 updates
+step       0/10,885 | loss 9.0633 | lr 1.84e-06 | 3s
+step     500/10,885 | loss 1.8265 | lr 9.21e-04 | 611s
 ...
-eval step 3,000: val loss 0.4878 (best 0.4878) *best*
-eval step 3,500: val loss 0.4561 (best 0.4561) *best*
-done: 3,629 steps in 2,859s | final val loss 0.4494
+eval step 1,000: val loss 1.2267 (best 1.2267) *best*
+eval step 2,000: val loss 0.7374 (best 0.7374) *best*
+eval step 3,000: val loss 0.5519 (best 0.5519) *best*
+eval step 4,000: val loss 0.4657 (best 0.4657) *best*
+...
+eval step 9,000: val loss 0.2897 (best 0.2897) *best*
+eval step 10,000: val loss 0.2776 (best 0.2776) *best*
+done: 10,885 steps in 9,239s | final val loss 0.2696
 ```
 
-48 minutes on an M2 MacBook Air (`mps` is Apple's GPU). The first loss is 9.06, right where a
-uniform guess over 8,000 tokens would be. In the first 250 steps it falls to 2.7: the model learns
-the format, the indentation, the commonest words. After that every step buys less.
+2 hours 34 minutes on an M2 MacBook Air (`mps` is Apple's GPU). The first loss is 9.06, right
+where a uniform guess over 8,000 tokens would be. In the first few hundred steps it falls fast: the
+model learns the format, the indentation, the commonest words. After that every step buys less.
+
+`--epochs 3` means the model reads every training window three times, in a new order each time.
+The next section explains why three, and what one pass gave instead.
 
 The training loss on single batches jumps around (one batch has easy rows, the next hard ones).
 Watch the validation loss, measured on the same 200 windows every time: it falls at every
 check. The final weights scored best of all, so `best.pt` is the model after the last step.
+
+## Why three passes: Chinchilla and Phi
+
+There are two well-known answers to "how much data does a model need?", and they disagree.
+
+**Chinchilla** ([Hoffmann et al., 2022](https://arxiv.org/abs/2203.15556)) asks: for a fixed
+compute budget, what's the best split between model size and training tokens? Its answer is about
+20 tokens per parameter, each token seen once. It treats all tokens as equal: web text is web text.
+By that rule our 8.3M model wants about 170M tokens, and the laptop data has 22M.
+
+**Phi** ([Gunasekar et al., 2023, "Textbooks Are All You Need"](https://arxiv.org/abs/2306.11644))
+asks a different question: what if the tokens are not equal? phi-1 trained a 1.3B code model on
+about 7B tokens of carefully chosen, textbook-quality code, about 8 passes over it, and it beat
+much bigger models trained on far more web code. Clean data you can learn from, read several
+times, does more than more data read once.
+
+theOG follows Phi. Lesson 2's cleaning rules are the "textbook quality" half. Epochs are the other
+half. We measured it on the laptop track, same data, same model, same settings, changing only the
+number of passes:
+
+| | 1 epoch | 3 epochs |
+|---|:-:|:-:|
+| training time on an M2 | 48 minutes | 2 h 34 min |
+| final validation loss | 0.449 | 0.270 |
+| MBPP-500 (lesson 7) | 19/500 | 49/500 |
+| HumanEval-164 (lesson 7) | 2/164 | 8/164 |
+
+Repeating data stops paying at some point. [Muennighoff et al., 2023](https://arxiv.org/abs/2305.16264)
+found that up to about 4 passes are worth almost as much as new data, and that the gain fades after
+that. The sign to stop is in your own log: the training loss keeps falling while the validation loss
+stops or rises. Here it fell at every check, to the last one.
+
+The full track keeps one epoch: theOG's 2.49B tokens are about 50 tokens per parameter already.
 
 Leave it running and do the next two exercises meanwhile. If you stop it, run the same command
 again and it resumes.
@@ -275,18 +314,12 @@ def is_palindrome(s):
     return s == s[::-1]
 
 def is_palindrome(s):
-    return s == s[::-1]
-
-def is_palindrome(s):
-    return is_palindrome(s) and is_palindrome(s)
-
-def is_palindrome(s):
-    return is_palindrome(s) and is_palindrome(s)
+    return is_palindrome(s)
 ```
 ````
 
-The first function is right. Then the model didn't stop: it wrote it again, then twice more with a
-version that calls itself forever. In Python the last definition wins, so this answer fails. Knowing
+The first function is right. Then the model didn't stop: it wrote a second one that calls itself
+forever. In Python the last definition wins, so this answer fails. Knowing
 when to stop is one of the last things a small model learns.
 
 Now give it the task the way MBPP does, and the way exercise 2.4 taught it, with a test that
@@ -309,15 +342,13 @@ def fib(n):
     elif n == 1:
         return 1
     else:
-        a, b = (0, 1)
-        for _ in range(2, n + 1):
-            a, b = (b, a + b)
-        return b
+        return fib(n - 1) + fib(n - 2)
 ```
 ````
 
-Correct, iterative, and called `fib`, the name in the test. Without the test line it wrote a
-function called `matrix_power` that has nothing to do with Fibonacci.
+Correct, and called `fib`, the name in the test. Without the test line it wrote a function called
+`fibonacci` that returns the string `'Input should be positive integer'` for almost every `n`: it
+had no test to tell it what a right answer looks like.
 
 Right name doesn't mean right answer:
 
@@ -330,40 +361,41 @@ assert reverse_words("hello world") == "world hello"
 ```python
 def reverse_words(s):
     words = s.split()
-    reversed_words = [word[::-1] for word in words]
-    return ' '.join(reversed_words)
+    reversed_words = words[::-1]
+    reversed_string = ' '.join(reversed_words)
+    return reversed_string
 ```
 ````
 
-It reverses the letters of each word (`"olleh dlrow"`), a different, common task. Code that runs
-but does the wrong thing is now the laptop model's commonest failure. Lesson 7 counts it.
+Right. After one epoch the same model reversed the letters of each word instead (`"olleh dlrow"`),
+a different, common task. That kind of answer, code that runs but does the wrong thing, is still
+the laptop model's commonest failure. Lesson 7 counts it.
 
 `--temperature 0` gives the same answer every time. Leave it out (the default is 0.2) and the
 sampler draws, so your output will vary.
 
 ## How this differs from theOG's own run
 
-Same recipe and same model layout. theOG-50M v3 trained on 2.49B tokens from 12 public sources; the
-published checkpoint is step 346,000 (model card). The laptop track sees 22M tokens, about 0.9%
-of that, on a model a sixth the size.
+Same recipe and same model layout. theOG-50M v3 trained on 2.49B tokens from 12 public sources, one
+epoch; the published checkpoint is step 346,000 (model card). The laptop track has 22M tokens,
+about 0.9% of that, read three times, on a model a sixth the size.
 
 ## Going further
 
 1. Plot loss against step from your log. Where does it flatten?
-2. The run reads every window once. Why not `--epochs 3`?
+2. Why `--epochs 3` and not 1, or 10?
 3. Why is the first logged loss close to ln 8000 and not, say, 20?
 
 <details><summary>Answers</summary>
 
-1. On the laptop run it never really flattens. Validation loss went 1.68, 1.12, 0.85, 0.67, 0.55,
-   0.49, 0.46, and 0.45 at the end: still falling, mostly slowed by the shrinking learning rate. That means the
-   model would learn more from more data or more steps. On the full track the curve flattens much
-   later, and that's where theOG's 2.49B tokens come in.
-2. With 22M tokens, a second pass would probably still lower the validation loss: the model is
-   small and hasn't memorised anything yet. Run `--epochs 2` into a new `--out` and compare the val
-   loss and the lesson 7 score. The risk with many epochs is that the model starts memorising the
-   training answers: the training loss keeps falling while the validation loss stops or rises.
-   That gap is the sign.
+1. On the laptop run it never really flattens. Validation loss went 1.23, 0.74, 0.55, 0.47, 0.41,
+   0.38, 0.33, 0.31, 0.29, 0.28, and 0.27 at the end: still falling, more slowly as the learning
+   rate shrinks. The model would still learn from more data or more steps.
+2. One epoch left the model undertrained: its validation loss was still falling when the run ended
+   (0.45), and it scored 19/500 on MBPP. Three gave 0.27 and 49/500 (the table above). Ten would
+   probably start to memorise: 8M parameters reading the same 95k answers ten times learns the
+   answers, not the skill. The sign is in the log: the training loss keeps falling while the
+   validation loss stops or rises. Try `--epochs 5` into a new `--out` and see where yours turns.
 3. The embedding table starts small (`std=0.02`, lesson 4 step 1), so the first logits are all
    near 0 and the softmax is close to uniform: −ln(1/8000) ≈ 8.99. With large random weights the
    model would start confidently wrong, with a loss of 20 or more, and the first steps would be
