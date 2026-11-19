@@ -188,7 +188,7 @@ stops or rises. Here it fell at every check, to the last one.
 
 The full track keeps one epoch: theOG's 2.49B tokens are about 50 tokens per parameter already.
 
-Leave it running and do the next two exercises meanwhile. If you stop it, run the same command
+Leave it running and do the next three exercises meanwhile. If you stop it, run the same command
 again and it resumes.
 
 **Full track:**
