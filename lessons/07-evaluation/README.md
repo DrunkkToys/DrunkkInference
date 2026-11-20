@@ -188,8 +188,13 @@ After it, 262 fewer answers have the wrong name. Most of them still fail, but no
 reasons: "assert failed" went from 29 to 227 and run-time errors from 51 to 106. A wrong name hides
 every other kind of failure. 16 of those answers were right.
 
-On HumanEval, where the prompt *is* the function signature, the name was rarely the problem, so the
-fix barely touched it.
+On HumanEval the table hides the name problem. The prompt *is* the function stub, and the harness
+puts the whole prompt in front of the model's code, so the function always exists: when the model
+picks another name, the stub with only a docstring is what runs, returns `None`, and fails as
+"assert failed". On the 3-epoch run the model defines the function under the right name in only 62
+of 164 answers; of the other 102, 71 count as "assert failed" and 29 don't parse. Exercise 2.4 can't
+help here, because HumanEval's prompt already names the function. Counting the names is the same
+habit as counting the reasons: read what the model wrote, not only what the harness says.
 
 The third run changed no data at all, only the number of passes over it. Wrong names fell again,
 from 81 to 26: the model reads the test line better. And 30 more MBPP tasks pass. Most answers still
@@ -231,7 +236,8 @@ Open the results file to see any answer in full:
    HumanEval/26 passes in both modes. Three epochs helped `/no_think` and did nothing for `/think`.
    The reason is in lesson 3's `sequence()`: every training row is written in `/no_think` mode, so
    the model has never seen a prompt ending in `/think`. The more it trains on one mode, the more
-   the other is a prompt it doesn't know. Lesson 6 is about that span.
+   the other is a prompt it doesn't know. Lesson 6, step 1, shows what it writes instead, and the
+   rest of lesson 6 is the experiment of training that mode.
 3. On our run most bugs are in the algorithm. Mbpp/17 asks for the perimeter of a square and gets
    `n * (n + 1) * (n + 1) // 2`. Mbpp/11 has the right name and the right loop, then reuses `char`
    as the loop variable, so `char != char` is never true and it returns `''`. The shape is right

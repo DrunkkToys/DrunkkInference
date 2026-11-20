@@ -14,6 +14,7 @@ LESSONS = [
     ("3", "format + packing", "tests/test_03_format_pack.py"),
     ("4", "model", "tests/test_04_model.py"),
     ("5", "training + generation", "tests/test_05_train.py"),
+    ("6", "think span", "tests/test_06_think.py"),
     ("7", "evaluation", "tests/test_07_evaluate.py"),
     ("8", "export", "tests/test_08_export.py"),
 ]

@@ -54,7 +54,7 @@ Hugging Face datasets ─► rows.jsonl ─► tokenizer.json ─► packed wind
 | 3 | one training sequence with its labels, and the packer | `theog/format.py`, `theog/pack.py` |
 | 4 | the transformer, in 8 steps | `theog/model.py` |
 | 5 | the learning-rate schedule, the loss, the sampler, the prompt, generation | `theog/train.py`, `theog/format.py`, `theog/generate.py` |
-| 6 | nothing new: what the /think span does, and an experiment | — |
+| 6 | which tokens the prompt grounds, what a think span costs, and an experiment | `theog/think.py`, `theog/cost.py` |
 | 7 | answer extraction and the sandboxed test runner | `theog/generate.py`, `theog/evaluate.py` |
 | 8 | the weight mapping for GGUF, the Ollama Modelfile | `theog/export.py` |
 | 9 | your model card and release | — |
@@ -82,11 +82,12 @@ lesson                       tests
 3  format + packing          to do  2 failed, 4 errors in 0.69s
 4  model                     to do  14 failed, 1 passed in 12.73s
 5  training + generation     to do  3 failed, 4 errors in 2.04s
+6  think span                to do  3 failed, 3 passed, 3 errors in 2.32s
 7  evaluation                to do  3 failed in 1.91s
 8  export                    to do  3 failed, 1 error in 2.20s
 ```
 
-Everything is "to do". That's the course. Lessons 6 and 9 have no code to write, so they have no row.
+Everything is "to do". That's the course. Lesson 9 has no code to write, so it has no row.
 
 ## How an exercise works
 
