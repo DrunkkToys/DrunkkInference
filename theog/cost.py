@@ -24,6 +24,8 @@ from tokenizers import Tokenizer
 from theog.format import sequence
 from theog.pack import split_of
 from theog.think import DESIGNS
+
+LESSON_DESIGNS = "none,sig,shared,skeleton,plan"  # the rows lesson 6 scores
 from theog.tokens import ANSWER, IGNORE
 from theog.train import load_model, pick_device
 
@@ -71,7 +73,8 @@ def main() -> None:
     ap.add_argument("--tokenizer", type=Path, required=True)
     ap.add_argument("--rows", type=Path, default=Path("data/rows.clean.jsonl"))
     ap.add_argument("--think", choices=DESIGNS, required=True, help="the design the model was trained with")
-    ap.add_argument("--fit", default=",".join(DESIGNS), help="designs every scored row must fit in")
+    ap.add_argument("--fit", default=LESSON_DESIGNS,
+                    help="designs every scored row must fit in (keep the default to compare with lesson 6)")
     ap.add_argument("--n", type=int, default=1000)
     ap.add_argument("--seq-len", type=int, default=512)
     a = ap.parse_args()

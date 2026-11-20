@@ -2,8 +2,21 @@
 
 **You write:** `grounded` in `theog/think.py` (exercise 6.1) and `nats` in `theog/cost.py`
 (exercise 6.2). **Then you run:** an experiment that asks what to write inside the think span, and
-how to tell if it helps. **Time:** about 30 minutes for the code; each training run in the
-experiment takes about 25 minutes on an M2.
+how to tell if it helps. **Time:** about 30 minutes for the code.
+
+The exercises and their tests are all you need for lesson 7. Every run below is optional: the
+lesson gives its results, so you can read it straight through. If you do run them:
+
+| step | what it needs | time on an M2 |
+|---|---|---|
+| 1 | your lesson 5 model | a minute (the benchmark score needs lesson 7) |
+| 3 | a 3-epoch run with the plan | about 2½ hours |
+| 4 | your lesson 5 model and the step 3 model | a few minutes |
+| 5 | one half-epoch run per design | about 25 minutes each |
+
+Commands that run `theog.evaluate` need lesson 7's `extract_code` and `run_tests`. Come back to
+them after lesson 7. The experiment scores `final.pt`, the weights after the last step, so every
+design is measured at the same budget. For the lesson 5 run that is the same model as `best.pt`.
 
 This lesson is a real experiment, written up in the order it happened, wrong predictions included.
 You can read it straight through, or rerun any step on your own model.
@@ -34,16 +47,30 @@ text should be.
 
 ## Step 1: the empty span, in a mode the model never saw
 
-Our lesson 5 model trained on `/no_think` rows only. Score it on HumanEval in `/think` mode (lesson 7
-shows the harness; `--think` switches the mode):
+Our lesson 5 model trained on `/no_think` rows only. Give it lesson 5's task in `/think` mode
+(`--think` opens the span instead of closing it):
 
 ```bash
-uv run python -m theog.evaluate --ckpt runs/laptop/final.pt --tokenizer data/tokenizer.json --think --dataset humaneval --out results/
+uv run python -m theog.generate --ckpt runs/laptop/final.pt --tokenizer data/tokenizer.json \
+    --think --temperature 0 --max-new 12 "Write a function that checks if a string is a palindrome."
 ```
 
-It scores **1/164**, against 8/164 in `/no_think`. After `<|Think|>` the model closes the span, as it should, but only 48 of the
-164 answers continue with `<|Answer|>`; the rest skip it and start the code straight after
-the span, some of it in the middle of a line. The model never saw a prompt ending in `/think`, and three passes over the data
+````text
+<|/Think|><|Answer|>
+```python stringstringstringstringstringstringstring
+````
+
+In `/no_think` the same model wrote a correct `is_palindrome` (lesson 5). Here it closes the span,
+as it should, and then loses the thread. After lesson 7, score it on HumanEval in `/think` mode:
+
+```bash
+uv run python -m theog.evaluate --ckpt runs/laptop/final.pt --tokenizer data/tokenizer.json \
+    --think --dataset humaneval --out results/
+```
+
+It scores **1/164**, against 8/164 in `/no_think`. Only 48 of the 164 answers continue the span
+with `<|Answer|>`; the rest skip it and start the code straight after the span, some of it in the
+middle of a line. The model never saw a prompt ending in `/think`, and three passes over the data
 made it more sure of the only mode it knows.
 
 So `/think` needs training rows of its own. And once you write those rows, you have to decide what
@@ -130,9 +157,19 @@ The plan came first: it looks the most like "thinking". We packed every row with
 lesson 5 recipe (3 epochs) and wrote down a prediction before scoring:
 
 ```bash
-uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokenizer.json --out data/packed_plan --think plan
-uv run python -m theog.train --packed data/packed_plan --out runs/think-plan --preset laptop --epochs 3 --batch-size 16 --accum 1 --lr 1e-3 \
-    --eval-every 1000 --eval-windows 200 --log-every 500
+uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokenizer.json \
+    --out data/packed_plan --seq-len 512 --think plan
+uv run python -m theog.train --packed data/packed_plan --out runs/think-plan --preset laptop --epochs 3 \
+    --batch-size 16 --accum 1 --lr 1e-3 --eval-every 1000 --eval-windows 200 --log-every 500
+```
+
+`--seq-len 512` matches the laptop model, as in lesson 5. The scores, after lesson 7:
+
+```bash
+uv run python -m theog.evaluate --ckpt runs/think-plan/final.pt --tokenizer data/tokenizer.json \
+    --think --dataset humaneval --out runs/think-plan/he
+uv run python -m theog.evaluate --ckpt runs/think-plan/final.pt --tokenizer data/tokenizer.json \
+    --think --dataset mbpp500 --out runs/think-plan/mbpp
 ```
 
 > HumanEval `/think` 4 to 10 of 164, MBPP-500 35 to 60 of 500. No collapse: the span is trained now.
@@ -144,8 +181,8 @@ The result:
 | `none`, `/no_think` | 8 | 49 |
 | `plan`, `/think` | 1 | 34 |
 
-No collapse this time: the span is closed in 475 of 500 MBPP answers and the `name:` line is right in 426 of
-them. And yet 15 fewer MBPP tasks pass. Both predictions were wrong, and the run alone doesn't say
+No collapse this time: the span is closed in 475 of 500 MBPP answers and the `name:` line is
+right in 426 of them. And yet 15 fewer MBPP tasks pass. Both predictions were wrong, and the run alone doesn't say
 why. You need a measure that does.
 
 ## Step 4: the measure, nats per row
@@ -179,7 +216,7 @@ nats spent on the span and the nats spent on the answer. At each position i whos
 predict the answer.
 
 ```bash
-uv run pytest tests/test_06_think.py -k nats
+uv run pytest tests/test_06_think.py -k "nats or costs"
 ```
 
 <details><summary>Solution</summary>
@@ -233,7 +270,8 @@ greedy, in the design's own mode. Prediction, written before the first run:
 To train one design yourself:
 
 ```bash
-uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokenizer.json --out data/packed_sig --think sig
+uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokenizer.json \
+    --out data/packed_sig --seq-len 512 --think sig
 uv run python -m theog.train --packed data/packed_sig --out runs/screen/sig --preset laptop --epochs 0.5 \
     --batch-size 16 --accum 1 --lr 1e-3 --eval-every 1000 --eval-windows 200 --log-every 500
 uv run python -m theog.cost --ckpt runs/screen/sig/final.pt --tokenizer data/tokenizer.json --think sig
@@ -241,7 +279,7 @@ uv run python -m theog.evaluate --ckpt runs/screen/sig/final.pt --tokenizer data
     --think --dataset mbpp500 --limit 100 --out runs/screen/sig_mbpp
 ```
 
-(For `none`, pack and evaluate without `--think`.)
+(For `none`, pack and evaluate without `--think`. The last command needs lesson 7.)
 
 What we got:
 
@@ -311,7 +349,9 @@ text in it beats that at 50M is the experiment this lesson's tools let you run.
 3. Design your own f(P, C) and add it to `DESIGNS`. Before you train it, write down what you
    expect its span and answer costs to be, then run the screen. Ideas: `sig` plus the first
    assert of the prompt; the names of the variables the code introduces; `sig` on MBPP and `none`
-   on everything else.
+   on everything else. `theog.cost` scores the rows that fit in the five lesson designs. If yours
+   is longer, pass `--fit none,sig,shared,skeleton,plan,<yours>` to every cost command you
+   compare, so they all score the same rows.
 4. The screen ran half an epoch per design. What could change at 3 epochs, and what would you need
    to see to believe it?
 
