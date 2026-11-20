@@ -18,6 +18,7 @@ import numpy as np
 from tokenizers import Tokenizer
 
 from theog.format import sequence
+from theog.think import DESIGNS
 from theog.tokens import IGNORE, PAD
 
 SEQ_LEN = 2048
@@ -63,7 +64,9 @@ class Packer:
         self.lbl_f.close()
 
 
-def pack(rows: Path, tokenizer: Path, out: Path, seq_len: int = SEQ_LEN) -> dict:
+def pack(rows: Path, tokenizer: Path, out: Path, seq_len: int = SEQ_LEN, think: str = "none") -> dict:
+    """`think` names the lesson 6 design that fills every row's think span."""
+    think_for = DESIGNS[think]
     tok = Tokenizer.from_file(str(tokenizer))
     if tok.get_vocab_size() > 32767:
         raise ValueError("int16 storage needs a vocabulary under 32768 tokens")
@@ -73,7 +76,7 @@ def pack(rows: Path, tokenizer: Path, out: Path, seq_len: int = SEQ_LEN) -> dict
     with open(rows, encoding="utf-8") as f:
         for line in f:
             row = json.loads(line)
-            seq = sequence(tok, row["user"], row["answer"], row.get("think", ""))
+            seq = sequence(tok, row["user"], row["answer"], think_for(row))
             if len(seq["input_ids"]) > seq_len:
                 n_long += 1
                 continue
@@ -84,7 +87,7 @@ def pack(rows: Path, tokenizer: Path, out: Path, seq_len: int = SEQ_LEN) -> dict
     meta = {"seq_len": seq_len, "rows": n_rows, "dropped_longer_than_seq_len": n_long,
             "tokenizer": str(tokenizer), "vocab_size": tok.get_vocab_size(),
             **{f"{s}_windows": p.windows for s, p in packers.items()},
-            **{f"{s}_tokens": p.tokens for s, p in packers.items()}}
+            **{f"{s}_tokens": p.tokens for s, p in packers.items()}, "think": think}
     (out / "meta.json").write_text(json.dumps(meta, indent=2) + "\n")
     return meta
 
@@ -105,8 +108,9 @@ def main() -> None:
     ap.add_argument("--tokenizer", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--seq-len", type=int, default=SEQ_LEN)
+    ap.add_argument("--think", choices=DESIGNS, default="none", help="what fills the think span (lesson 6)")
     a = ap.parse_args()
-    meta = pack(a.rows, a.tokenizer, a.out, a.seq_len)
+    meta = pack(a.rows, a.tokenizer, a.out, a.seq_len, a.think)
     print(json.dumps(meta, indent=2))
 
 
