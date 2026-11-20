@@ -88,10 +88,11 @@ PARAMETER stop "<|User|>"
 PARAMETER temperature 0.2
 PARAMETER top_k 40
 ...
+PARAMETER num_ctx 512
 ```
 
-The stops come from `STOPS` and the parameters from `SAMPLING`, both at the top of the file. End
-with one newline.
+The stops come from `STOPS` and the parameters from `SAMPLING`, both at the top of the file. The
+last line is `num_ctx`, the model's context, which the export passes in. End with one newline.
 
 Without the `PARAMETER` lines Ollama uses its own defaults (temperature 0.8, a repeat penalty), and
 your model would behave differently from your evaluation in lesson 7.
@@ -105,10 +106,10 @@ All 4 should pass.
 <details><summary>Solution</summary>
 
 ```python
-def modelfile(gguf_path, mode="no_think"):
+def modelfile(gguf_path, mode="no_think", num_ctx=2048):
     lines = [f"FROM {gguf_path}", f'TEMPLATE """{go_template(mode)}"""']
     lines += [f'PARAMETER stop "{s}"' for s in STOPS]
-    lines += [f"PARAMETER {k} {v}" for k, v in SAMPLING.items()]
+    lines += [f"PARAMETER {k} {v}" for k, v in {**SAMPLING, "num_ctx": num_ctx}.items()]
     return "\n".join(lines) + "\n"
 ```
 
@@ -128,7 +129,7 @@ release/Modelfile.think  ->  ollama create theog:think -f release/Modelfile.thin
 ```
 
 A few seconds. A 9.1 MB file: that's your whole model. (Your hash will differ; it's the hash of
-your weights.) The export also sets `num_ctx` in each Modelfile to the model's own context, 512
+your weights.) The export passes the model's own context to `modelfile` as `num_ctx`, 512
 here, so Ollama never feeds it a window longer than it trained on.
 
 Now in Ollama:

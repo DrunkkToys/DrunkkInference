@@ -26,6 +26,7 @@ def test_modelfile_points_at_the_gguf():
     from theog.export import modelfile
     mf = modelfile("./theog.gguf", "no_think")
     assert mf.startswith("FROM ./theog.gguf\n") and 'PARAMETER stop "<|/Answer|>"' in mf
+    assert modelfile("./theog.gguf", "no_think", 512).endswith("PARAMETER num_ctx 512\n")
 
 
 def test_tensor_names_follow_llama_cpp():
