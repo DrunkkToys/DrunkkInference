@@ -68,7 +68,7 @@ pos  token          label
 Build `input_ids` from three parts:
 
 1. **prompt:** `[USER]` + the tokens of `"\n{user.strip()} /no_think\n"` + `[USER_CLOSE, ASSISTANT]`.
-   (`/think` instead when `think_text` is set.)
+   (`/think` instead when `think_text` is set: a row with text in its span is a `/think` row.)
 2. **think span:** `[THINK]` + the tokens of `"\n{think_text}\n"` if there is think text + `[THINK_CLOSE]`.
 3. **answer:** `[ANSWER]` + the tokens of `"\n```python\n{answer}\n```\n"` + `[ANSWER_CLOSE, END]`.
 
@@ -191,6 +191,9 @@ uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokeni
 
 About 20 seconds. 22 million training tokens. 5,665 rows were longer than 512 tokens and were
 dropped, about 6%.
+
+`theog.pack` has one more flag, `--think`, which fills every row's think span with one of lesson 6's
+designs. Leave it at its default, `none`: lessons 4 to 5 train on the empty span.
 
 Now look at what you made. Decode the first window:
 

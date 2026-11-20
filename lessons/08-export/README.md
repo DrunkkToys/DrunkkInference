@@ -198,8 +198,9 @@ exported file. The course model never had them, so for you `tensors()` covers ev
    zeros, then quote marks until Ollama stopped it ("token repeat limit reached"). That's why the greedy comparison above is worth doing:
    it's the only check that catches this.
 3. LM Studio uses the Jinja `CHAT_TEMPLATE` from the file, so a message ending in `/think` opens
-   the span. If it shows control tokens, you should see `<|/Think|><|Answer|>` at the start of the
-   reply: the model closing the span itself, as in lesson 6.
+   the span. If it shows control tokens, you should see `<|/Think|>` at the start of the reply: the
+   model closing the span itself. A model trained only on `/no_think` rows follows it with
+   `<|Answer|>` only about one time in three (lesson 6, step 1).
 
 </details>
 
