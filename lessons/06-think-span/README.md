@@ -13,6 +13,7 @@ lesson gives its results, so you can read it straight through. If you do run the
 | 3 | a 3-epoch run with the plan | about 2½ hours |
 | 4 | your lesson 5 model and the step 3 model | a few minutes |
 | 5 | one half-epoch run per design | about 25 minutes each |
+| 6 | one 3-epoch run and two half-epoch runs | about 2½ hours, plus 25 minutes each |
 
 Commands that run `theog.evaluate` need lesson 7's `extract_code` and `run_tests`. Come back to
 them after lesson 7. The experiment scores `final.pt`, the weights after the last step, so every
@@ -302,7 +303,7 @@ here 9. More training made the plain answer cheaper faster than it made the plan
 
 What the prediction got right and wrong:
 
-- **Right:** `sig` has the cheapest span, and it is the winner. **Wrong:** `plan` is not the most
+- **Right:** `sig` has the cheapest span, and it wins the screen (step 6 checks that win). **Wrong:** `plan` is not the most
   expensive; `shared` and `skeleton` cost more. And no span costs under 3 nats: `sig`'s costs 10.
 
 - **Copying is not free for a small model.** `shared` is made only of tokens that are in the
@@ -317,14 +318,61 @@ What the prediction got right and wrong:
   name and the argument count are in the test line. It is the only design that saves more on the
   answer (12.1 nats) than its span costs (10.3).
 
+## Step 6: check the winner
+
+A 2% lead from one run at one seed is a claim, not a result. Two checks: the 3-epoch run that
+question 4 below asks for, and the screen again at a second seed. Prediction for the 3-epoch run,
+written before training:
+
+> `sig` costs 36 to 40 nats per row, at or below `none`'s 38.5. HumanEval 5 to 12 of 164, MBPP-500
+> 40 to 58 of 500. `sig` wins only if its cost is below 38.5 and it passes several more tasks than
+> `none` on both benchmarks.
+
+```bash
+uv run python -m theog.train --packed data/packed_sig --out runs/think-sig --preset laptop --epochs 3 \
+    --batch-size 16 --accum 1 --lr 1e-3 --eval-every 1000 --eval-windows 200 --log-every 500
+uv run python -m theog.cost --ckpt runs/think-sig/final.pt --tokenizer data/tokenizer.json --think sig
+uv run python -m theog.evaluate --ckpt runs/think-sig/final.pt --tokenizer data/tokenizer.json \
+    --think --dataset humaneval --out runs/think-sig/he
+uv run python -m theog.evaluate --ckpt runs/think-sig/final.pt --tokenizer data/tokenizer.json \
+    --think --dataset mbpp500 --out runs/think-sig/mbpp
+```
+
+| 3 epochs, same recipe | span | answer | **total** | HumanEval-164 | MBPP-500 |
+|---|:-:|:-:|:-:|:-:|:-:|
+| `none`, `/no_think` | 0 | 38.5 | **38.5** | 8 | 49 |
+| `sig`, `/think` | 4.8 | 36.9 | **41.7** | 2 | 53 |
+| `plan`, `/think` | 23.7 | 29.8 | **53.5** | 1 | 34 |
+
+**At 3 epochs `sig` loses to the empty span**, by 3.2 nats per row (8%). Its span got cheap (4.8
+nats, from 10.3), but it now saves only 1.6 on the answer. It is the same pattern as `plan`: more
+training made the plain answer cheaper faster than it made span plus answer cheaper. MBPP is 4
+tasks better, inside the noise. HumanEval is 6 worse, for a reason you can read in the answers: the
+span is closed in 151 of 164, but its `def` line has the right name in only 58. HumanEval prompts
+are code, a `def` and a docstring, while almost every training prompt names the function in
+English, so the model copies the name badly. On MBPP the name is right in 424 of 500.
+
+The second check reruns the screen for `none` and `sig` with `--seed 7` on every `theog.train`
+command, and nothing else changed:
+
+| 0.5 epoch, total nats per row | seed 42 (step 5) | seed 7 |
+|---|:-:|:-:|
+| `none` | 94.0 | 93.0 |
+| `sig` | 92.1 | 94.1 |
+
+The order flips. We expected two seeds of the same design to land about 1 nat apart; they land 1
+to 2 apart, as much as the gap the screen was measuring. So the screen can rule out the big losers
+(`shared` and `skeleton` were 28 to 34 nats behind) but it can't rank designs a few nats apart. For
+that you need several seeds, or longer runs.
+
 ## What we conclude
 
-At 8M parameters and half an epoch, the best interpolation between prompt and code we found is the
-thinnest one: the signature, which the prompt nearly gives away. It wins by 2%, too little to see on
-100 MBPP tasks. Everything that tells the model more about the code costs more to write than it
-saves. That's a result about this model size, not about think spans: the question for a bigger
-model is whether its span cost falls faster than its answer cost, and `theog.cost` measures exactly
-that. Going further, question 4, says what it would take to settle it at 3 epochs.
+No span with text in it beats the empty span on this model. The empty span, theOG's pause, is
+still the best design we found at 8M parameters. Every text design moves work from the answer to
+the span, and the span costs more to write than it saves; the signature comes closest, and its 2%
+lead in the screen was inside the seed noise. That's a result about this model size, not about
+think spans: the question for a bigger model is whether its span cost falls faster than its
+answer cost, and `theog.cost` measures exactly that.
 
 ## What it did for theOG
 
@@ -367,8 +415,9 @@ text in it beats that at 50M is the experiment this lesson's tools let you run.
    compare after.
 4. At 3 epochs both span and answer get cheaper, and not by the same amount for every design. A
    design that loses at half an epoch can win at 3 if its span cost falls faster than `none`'s
-   answer cost. To believe it you need the full-cost table at 3 epochs, on the same rows, and a
-   benchmark difference of several tasks in the same direction (lesson 7, question 4).
+   answer cost, and a winner can lose. To believe a win you need the full-cost table at 3 epochs, on
+   the same rows, at more than one seed, and a benchmark difference of several tasks in the same
+   direction (lesson 7, question 4). Step 6 ran the 3-epoch check for `sig`: it lost.
 
 </details>
 
