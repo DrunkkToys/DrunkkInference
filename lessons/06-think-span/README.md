@@ -464,9 +464,8 @@ compare the answer cost:
 | step 4,000 | 41.8 | 41.9 | 0.1 |
 
 The gap shrinks as training goes on: the model learns to ignore its vectors. At step 4,000 its
-validation loss (0.475) sits between `pause4` (0.457) and `none` (0.484), where 8 more pause
-positions would put it. We stopped the run there, since 7,000 more steps can't make vectors that
-carry nothing beat the pause. Swap your vectors for someone else's before you trust them: if the
+validation loss is 0.475, behind `none` (0.466, seed 7) and `pause4` (0.457). We stopped the run
+there, since 7,000 more steps can't make vectors that carry nothing beat the pause. Swap your vectors for someone else's before you trust them: if the
 cost doesn't move, they're pause tokens.
 
 ## What we conclude
