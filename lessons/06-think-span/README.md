@@ -14,6 +14,7 @@ lesson gives its results, so you can read it straight through. If you do run the
 | 4 | your lesson 5 model and the step 3 model | a few minutes |
 | 5 | one half-epoch run per design | about 25 minutes each |
 | 6 | one 3-epoch run and two half-epoch runs | about 2½ hours, plus 25 minutes each |
+| 7 | one 3-epoch run per design | 2½ to 4 hours each (`lat8p` about 6) |
 
 Commands that run `theog.evaluate` need lesson 7's `extract_code` and `run_tests`. Come back to
 them after lesson 7. The experiment scores `final.pt`, the weights after the last step, so every
@@ -365,14 +366,102 @@ to 2 apart, as much as the gap the screen was measuring. So the screen can rule 
 (`shared` and `skeleton` were 28 to 34 nats behind) but it can't rank designs a few nats apart. For
 that you need several seeds, or longer runs.
 
+## Step 7: spans the model doesn't pay for
+
+Steps 3 to 6 all hit the same wall. If the span is a function of P and C, writing it can't be
+cheaper than writing C straight away: at best the work is the same, split in two. So we tried
+five designs that get around the wall in different ways. Every run is the lesson 5 recipe, 3
+epochs, seed 42, scored on `final.pt`, on the same 1,000 rows as every table above. Before each
+run we wrote the prediction down (`runs/<name>/PREDICTION.md`).
+
+| design | the span | the idea |
+|---|---|---|
+| `pause4` | `~~~~` | four fixed tokens: positions to compute in, nothing to say ([Goyal et al., 2023](https://arxiv.org/abs/2310.02226)) |
+| `c2f1` | the code with every block deeper than one indent replaced by `...` | coarse to fine: the outline first, then the fills, nothing written twice |
+| `psig` | `def count_pos(1 arg) -> int` | the signature, built from the **prompt** alone (its first `assert`, or its `def` line) |
+| `retr` | `similar task:` and the code of the closest **training** task | retrieval: knowledge from outside the weights ([RETRO](https://arxiv.org/abs/2112.04426), [kNN-LM](https://arxiv.org/abs/1911.00172)) |
+| `lat8`, `lat8p` | 8 vectors, not tokens | latent interpolation: points on the line from the prompt to the code ([Coconut](https://arxiv.org/abs/2412.06769)) |
+
+`psig` and `retr` are built without the answer, so at inference the harness writes them into the
+span for free: training puts no loss on them (`mask_prefill` in `theog/think.py`), and
+`theog.evaluate --design` prefills them. `retr` searches only the training split, never returns the
+row itself, and on the benchmarks its neighbor is never the reference solution (0 of 164, 0 of
+500).
+
+`lat8` puts the vector (1 − a)·mean(embed(prompt)) + a·mean(embed(code)) at slot k, with a = k/9,
+centered on a running mean and scaled to a token embedding's norm. A small head learns to predict
+each vector from the hidden state before it (`theog/latent.py`). At scoring and benchmark time the
+model writes the 8 vectors itself: nothing from the answer goes in.
+
+To run one (retrieval needs its index first):
+
+```bash
+uv run python -m theog.retrieve
+uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokenizer.json \
+    --out data/packed_retr --seq-len 512 --think retr
+uv run python -m theog.train --packed data/packed_retr --out runs/long/retr_s42 --preset laptop --epochs 3 \
+    --batch-size 16 --accum 1 --lr 1e-3 --eval-every 1000 --eval-windows 200 --log-every 500 --seed 42
+uv run python -m theog.cost --ckpt runs/long/retr_s42/final.pt --tokenizer data/tokenizer.json --think retr \
+    --fit none,sig,shared,skeleton,plan,pause16
+uv run python -m theog.evaluate --ckpt runs/long/retr_s42/final.pt --tokenizer data/tokenizer.json \
+    --design retr --dataset mbpp500 --out runs/long/retr_s42/bench
+```
+
+The `--fit` list keeps the same 1,000 rows as the tables above. What we got:
+
+| 3 epochs, seed 42 | span | answer | **total** | HumanEval-164 | MBPP-500 |
+|---|:-:|:-:|:-:|:-:|:-:|
+| `none` | 0 | 38.5 | **38.5** | 8 | 49 |
+| `pause4` | 0 | 38.7 | **38.7** | 8 | 49 |
+| `c2f1` | 25.6 | 13.5 | **39.1** | 2 | 47 |
+| `psig` | 0 | 38.9 | **38.9** | 8 | 53 |
+| `retr` | 0 | 38.8 | **38.8** | 12 | 46 |
+| `lat8` | 0 | 94.4 | **94.4** | 0 | (rerunning) |
+
+None of them beats the empty span. The four token designs land within 0.6 nats of `none`, inside
+the seed noise: a second seed of `none` scores 37.8, of `pause4` 38.3. What each one taught us:
+
+- **`pause4` changes which tasks pass, not how many.** Same score as `none` on both benchmarks, but
+  only 4 HumanEval and 21 MBPP tasks pass in both runs; 28 MBPP tasks pass only with `none` and 28
+  only with `pause4`, and the code is identical on 2 of 164 and 13 of 500. We looked for a pattern
+  (task length, nesting, loops in the reference solution) and found none: near-twins like the volume
+  of a cube and of a cuboid fall on opposite sides. Two runs of the same size land on different
+  tasks; that's the noise lesson 7 warns about, seen task by task.
+- **`c2f1` reorders the work and saves nothing.** The outline costs 25.6 nats and the fills 13.5:
+  writing the code in a different order costs about the same as writing it top to bottom.
+- **`psig` is the only design ahead on one benchmark and level on the other**: +4 tasks on MBPP,
+  equal on HumanEval. Its first HumanEval score was 1 of 164: HumanEval prompts have no `assert`,
+  so the span was `def ?` on all 164 tasks, and the model, trained to trust the span, invented a
+  name (`find_elements` where the test calls `has_close_elements`). Reading the prompt's `def` line
+  instead gives the right name on 163 of 164, and the score comes back to 8. Four tasks over 500 is
+  still inside the noise.
+- **`retr` is the most interesting loser.** It is the only design that brings in something the
+  model doesn't have, and the prediction was 30 to 36 nats. It's 38.8. On HumanEval it passes 12,
+  the best score in the table, and on MBPP 46, so +1 task over 664. The neighbor helps on some
+  tasks and misleads on others.
+- **`lat8` collapses, and the reason is in the training.** The model always trained on vectors
+  built from the answer, so it learned to read the answer out of them. On 20 rows the answer costs
+  14.9 nats with those vectors (a leak, a reference only), 19.4 with no vectors (`none`), and 65.6
+  with the vectors the model writes itself, though they're close to the targets (cosine 0.76). The
+  model never saw its own vectors in training. It's exposure bias, in one number.
+
+`lat8p` is the fix: it never trains on the targets. A first pass reads the prompt and 8 placeholder
+slots and predicts all 8 vectors at once; a second pass reads those vectors and writes the code. The
+token loss is on the second pass and flows back through the vectors; the targets only enter as a
+cosine loss. Inference runs the same two passes, so training and inference see the same vectors
+(`test_lat8p_trains_on_the_vectors_inference_writes`). Prediction, written before training: 37.5 to
+41 nats; no answer leaks in, so at best the vectors are 8 positions of extra compute plus a summary
+of the prompt.
+
 ## What we conclude
 
-No span with text in it beats the empty span on this model. The empty span, theOG's pause, is
-still the best design we found at 8M parameters. Every text design moves work from the answer to
-the span, and the span costs more to write than it saves; the signature comes closest, and its 2%
-lead in the screen was inside the seed noise. That's a result about this model size, not about
-think spans: the question for a bigger model is whether its span cost falls faster than its
-answer cost, and `theog.cost` measures exactly that.
+No span beats the empty span on this model: not text built from the code (steps 3 to 6), not a
+reordering, not free tokens from the prompt, not a neighbor's code, not latent vectors. The empty
+span, theOG's pause, is still the best design we found at 8M parameters. Every text design moves
+work from the answer to the span, and the span costs more to write than it saves; the designs that
+cost nothing to write save nothing either, beyond the noise. That's a result about this model size,
+not about think spans: the question for a bigger model is whether its span cost falls faster than
+its answer cost, and `theog.cost` measures exactly that.
 
 ## What it did for theOG
 

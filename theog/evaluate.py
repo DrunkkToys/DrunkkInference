@@ -92,20 +92,63 @@ def run_tests(solution: str, entry: str, tests: list[str], setup: str = "", time
     raise NotImplementedError("exercise 7.2: write run_tests")
 
 
+def prefilled(model, tok, task, prefill, think, temperature, top_k, max_new):
+    """generate() with `prefill` written into the model's turn after <|Think|> (a prompt-only span)."""
+    import torch
+    from theog.format import prompt_ids
+    from theog.generate import sample
+    from theog.tokens import STOP_IDS
+    device = next(model.parameters()).device
+    ids, out = prompt_ids(tok, task, think) + prefill, []
+    for _ in range(max_new):
+        with torch.no_grad():
+            logits = model(torch.tensor([(ids + out)[-model.cfg.max_seq_len:]], device=device))[0, -1].float()
+        t = sample(logits, temperature, top_k)
+        if t in STOP_IDS:
+            break
+        out.append(t)
+    return tok.decode(out, skip_special_tokens=False)
+
+
 class TheOGSolver:
     """theOG in its chat format: the task goes in the user turn."""
 
-    def __init__(self, ckpt, tokenizer, think, temperature, top_k, max_new):
+    def __init__(self, ckpt, tokenizer, think, temperature, top_k, max_new, design=None):
         from tokenizers import Tokenizer
         from theog.train import load_model, pick_device
         self.model = load_model(Path(ckpt), pick_device())
         self.tok = Tokenizer.from_file(str(tokenizer))
-        self.kw = dict(think=think, temperature=temperature, top_k=top_k, max_new=max_new)
+        self.design = design
+        if design == "lat8p":
+            self.model.latent.own = True
+        self.kw = dict(think=think or bool(design), temperature=temperature, top_k=top_k, max_new=max_new)
 
     def solve(self, task, dataset):
         from theog.generate import extract_code, generate
-        raw = generate(self.model, self.tok, task["prompt"].strip(), **self.kw)
-        code = extract_code(raw)
+        from theog.think import PREFILL, REORDER, fine_into_coarse
+        pre = PREFILL[self.design]({"user": task["prompt"]}) if self.design in PREFILL else None
+        if pre and self.design == "retr":  # leave room for the answer in the 512-token window
+            from theog.format import prompt_ids
+            from theog.think import shrink
+            head = len(prompt_ids(self.tok, task["prompt"].strip(), True))
+            pre = shrink(pre, lambda t: head + len(self.tok.encode(f"\n{t}\n").ids) <= 352)
+        ids = self.tok.encode(f"\n{pre}\n").ids if pre else None
+        if self.design in ("lat8", "lat8p"):
+            from theog import latent
+            raw = latent.generate(self.model, self.tok, task["prompt"].strip(), self.kw["max_new"])
+        else:
+            raw = prefilled(self.model, self.tok, task["prompt"].strip(), ids, **self.kw) if ids \
+                else generate(self.model, self.tok, task["prompt"].strip(), **self.kw)
+        if pre:
+            raw = f"\n{pre}\n" + raw
+        code = extract_code(raw.split("<|Answer|>", 1)[-1])
+        if self.design in REORDER and "<|/Think|>" in raw:
+            outline = raw.split("<|/Think|>", 1)[0].strip("\n")
+            if pre:  # psig_c2f1: the first line is the prefilled signature, not code
+                outline = outline.split("\n", 1)[1] if "\n" in outline else ""
+            m = re.search(r"```(?:python)?\n(.*?)(?:```|$)", raw.split("<|Answer|>", 1)[-1], re.DOTALL)
+            fills = (m.group(1) if m else "").strip("\n")  # keep the first fill's indent
+            code = fine_into_coarse(outline, fills)
         if dataset == "humaneval":
             entry = f"def {task['entry_point']}"
             # keep what the prompt defines before the function (imports, helpers)
@@ -148,6 +191,8 @@ def main() -> None:
     ap.add_argument("--dataset", choices=["humaneval", "mbpp500"], required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--think", action="store_true")
+    ap.add_argument("--design", help="lesson 6 design the model was trained with: prefills a prompt-only span "
+                    "(psig) and rebuilds coarse-to-fine code (c2f0, c2f1, psig_c2f1); implies --think")
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--top-k", type=int, default=40)
     ap.add_argument("--max-new", type=int, default=1200)
@@ -160,10 +205,10 @@ def main() -> None:
 
     tasks = load_tasks(a.dataset)[: a.limit or None]
     if a.ckpt:
-        solver, name = TheOGSolver(a.ckpt, a.tokenizer, a.think, a.temperature, a.top_k, a.max_new), a.ckpt.parent.name
+        solver, name = TheOGSolver(a.ckpt, a.tokenizer, a.think, a.temperature, a.top_k, a.max_new, a.design), a.ckpt.parent.name
     else:
         solver, name = HFSolver(a.hf, a.max_new), a.hf.replace("/", "__")
-    mode = "think" if a.think else "no_think"
+    mode = (a.design or ("think" if a.think else "no_think"))
     a.out.mkdir(parents=True, exist_ok=True)
     path = a.out / f"{name}_{a.dataset}_{mode}_t{a.temperature}_{time.strftime('%Y%m%dT%H%M%S')}.jsonl"
     passed = 0
