@@ -444,6 +444,9 @@ from theog.retrieve import retr  # noqa: E402
 
 PREFILL["retr"] = retr
 DESIGNS["retr"] = retr
+# psr: the prompt-only signature, then the nearest training solution. Both prefilled.
+PREFILL["psr"] = DESIGNS["psr"] = lambda row: psig(row) + "\n" + retr(row)
+RETRIEVED = ("retr", "psr")  # spans shortened to fit the window
 
 
 def shrink(text: str, fits) -> str:
@@ -464,13 +467,13 @@ def build(tok, design: str, row: dict, seq_len: int = 512) -> dict:
         from theog import latent
         return latent.sequence(tok, row["user"], row["answer"])
     span, answer = span_answer(design, row)
-    if design == "retr":
+    if design in RETRIEVED:
         span = shrink(span, lambda s: len(sequence(tok, row["user"], answer, s)["input_ids"]) <= seq_len)
     seq = sequence(tok, row["user"], answer, span)
     if design in NO_LOSS:
         mask_pauses(seq, tok.token_to_id(PAUSE))
     if design in PREFILL:
-        mask_prefill(seq, tok, span if design == "retr" else PREFILL[design](row))
+        mask_prefill(seq, tok, span if design in RETRIEVED else PREFILL[design](row))
     return seq
 
 DESIGNS["lat8"] = lambda row: ""  # continuous: theog/latent.py builds its sequence

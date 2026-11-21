@@ -82,3 +82,10 @@ def test_lat8p_trains_on_the_vectors_inference_writes(tokenizer_file):
     model.train()
     total, ce, cos = latent.loss(model, torch.tensor([a["input_ids"]]), torch.tensor([a["labels"]]))
     assert torch.isfinite(total) and 0 <= float(cos.detach()) <= 2
+
+
+def test_psr_is_the_signature_then_the_neighbor(tokenizer_file, monkeypatch):
+    from theog import think
+    monkeypatch.setattr(think, "retr", lambda row: "similar task:\ndef g(x):\n    return x")
+    monkeypatch.setitem(think.PREFILL, "psr", lambda row: think.psig(row) + "\n" + think.retr(row))
+    assert think.PREFILL["psr"](ROW) == "def count_pos(1 arg) -> int\nsimilar task:\ndef g(x):\n    return x"
