@@ -15,6 +15,7 @@ import json
 import math
 import random
 import time
+from dataclasses import fields, replace
 from pathlib import Path
 
 import numpy as np
@@ -84,9 +85,10 @@ def evaluate(model, ids, lbl, n_windows, batch_size, device) -> float:
 
 def train(packed: Path, out: Path, preset: str = "theog_50m", batch_size: int = 4, accum: int = 8,
           lr: float = 3e-4, eval_every: int = 2000, eval_windows: int = 400, log_every: int = 50,
-          seed: int = 42, max_steps: int = 0, epochs: float = 1.0, device: torch.device | None = None) -> dict:
+          seed: int = 42, max_steps: int = 0, epochs: float = 1.0, device: torch.device | None = None,
+          overrides: dict | None = None, attn: dict | None = None) -> dict:
     device = device or pick_device()
-    cfg = PRESETS[preset]()
+    cfg = replace(PRESETS[preset](), **(overrides or {}))
     meta = json.loads((packed / "meta.json").read_text())
     if meta["seq_len"] > cfg.max_seq_len or meta["vocab_size"] > cfg.vocab_size:
         raise SystemExit(f"data (seq_len {meta['seq_len']}, vocab {meta['vocab_size']}) does not fit "
@@ -96,6 +98,9 @@ def train(packed: Path, out: Path, preset: str = "theog_50m", batch_size: int = 
 
     torch.manual_seed(seed)
     model = M.TheOG(cfg).to(device)
+    if attn:  # an attention experiment (theog/attnlab.py)
+        from theog import attnlab
+        attnlab.apply(model, attn)
     lat = meta.get("think") in ("lat8", "lat8p")
     if lat:
         from theog import latent
@@ -138,6 +143,8 @@ def train(packed: Path, out: Path, preset: str = "theog_50m", batch_size: int = 
 
     def save(path, step, full=False):
         state = {"step": step, "model": model.state_dict(), "config": cfg.to_dict()}
+        if attn:
+            state["attn"] = attn
         if full:
             state.update(optimizer=opt.state_dict(), scheduler=sched.state_dict(), best_val=best)
         torch.save(state, path)
@@ -175,6 +182,9 @@ def train(packed: Path, out: Path, preset: str = "theog_50m", batch_size: int = 
 def load_model(ckpt: Path, device=None) -> M.TheOG:
     state = torch.load(ckpt, map_location=device or "cpu", weights_only=False)
     model = M.TheOG(M.Config(**state["config"]))
+    if state.get("attn"):
+        from theog import attnlab
+        attnlab.apply(model, state["attn"])
     if any(k.startswith("latent.") for k in state["model"]):
         from theog import latent
         latent.add_head(model)
@@ -196,9 +206,22 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--epochs", type=float, default=1.0, help="passes over the training windows")
     ap.add_argument("--max-steps", type=int, default=0, help="stop early (0 = run every epoch)")
+    ap.add_argument("--set", default="", help="config overrides, e.g. heads=8,head_dim=32,rope_theta=1e6")
+    ap.add_argument("--attn", default="", help="attention experiment, e.g. kv=2 or gate=1 (theog/attnlab.py)")
     a = ap.parse_args()
     train(a.packed, a.out, a.preset, a.batch_size, a.accum, a.lr, a.eval_every, a.eval_windows,
-          a.log_every, a.seed, a.max_steps, a.epochs)
+          a.log_every, a.seed, a.max_steps, a.epochs, overrides=_overrides(a.set), attn=_attn(a.attn))
+
+
+def _overrides(text: str) -> dict:
+    """'heads=8,rope_theta=1e6' -> {'heads': 8, 'rope_theta': 1000000.0}, typed like Config."""
+    types = {f.name: f.type for f in fields(M.Config)}
+    return {k: (float if types[k] in (float, "float") else int)(v) for k, v in (p.split("=") for p in text.split(",") if p)}
+
+
+def _attn(text: str) -> dict:
+    from theog.attnlab import parse
+    return parse(text)
 
 
 if __name__ == "__main__":
