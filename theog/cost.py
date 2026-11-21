@@ -76,6 +76,8 @@ def main() -> None:
     ap.add_argument("--fit", default=LESSON_DESIGNS,
                     help="designs every scored row must fit in (keep the default to compare with lesson 6)")
     ap.add_argument("--n", type=int, default=1000)
+    ap.add_argument("--swap", action="store_true",
+                    help="lat8/lat8p: give each row the vectors written for the next row's prompt")
     ap.add_argument("--seq-len", type=int, default=512)
     a = ap.parse_args()
     tok = Tokenizer.from_file(str(a.tokenizer))
@@ -85,17 +87,18 @@ def main() -> None:
         model.latent.own = True
     rows = rows_for(tok, a.rows, a.fit.split(","), a.n, a.seq_len)
     span = answer = 0.0
-    for r in rows:
+    for i, r in enumerate(rows):
         s = build(tok, a.think, r, a.seq_len)
         if a.think in ("lat8", "lat8p"):
             from theog import latent
-            sn, an = latent.nats(model, s)
+            other = build(tok, a.think, rows[(i + 1) % len(rows)], a.seq_len) if a.swap else None
+            sn, an = latent.nats(model, s, other)
         else:
             sn, an = nats(model, s["input_ids"], s["labels"])
         span += sn
         answer += an
     n = len(rows)
-    print(f"{a.think}: {n} rows | span {span / n:.1f} + answer {answer / n:.1f} = {(span + answer) / n:.1f} nats per row")
+    print(f"{a.think}{' (swapped vectors)' if a.swap else ''}: {n} rows | span {span / n:.1f} + answer {answer / n:.1f} = {(span + answer) / n:.1f} nats per row")
 
 
 if __name__ == "__main__":

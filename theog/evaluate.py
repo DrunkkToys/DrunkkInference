@@ -127,9 +127,9 @@ class TheOGSolver:
 
     def solve(self, task, dataset):
         from theog.generate import extract_code, generate
-        from theog.think import PREFILL, REORDER, fine_into_coarse
+        from theog.think import PREFILL, REORDER, RETRIEVED, fine_into_coarse
         pre = PREFILL[self.design]({"user": task["prompt"]}) if self.design in PREFILL else None
-        if pre and self.design == "retr":  # leave room for the answer in the 512-token window
+        if pre and self.design in RETRIEVED:  # leave room for the answer in the 512-token window
             from theog.format import prompt_ids
             from theog.think import shrink
             head = len(prompt_ids(self.tok, task["prompt"].strip(), True))
