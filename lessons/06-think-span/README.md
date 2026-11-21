@@ -416,7 +416,7 @@ The `--fit` list keeps the same 1,000 rows as the tables above. What we got:
 | `c2f1` | 25.6 | 13.5 | **39.1** | 2 | 47 |
 | `psig` | 0 | 38.9 | **38.9** | 8 | 53 |
 | `retr` | 0 | 38.8 | **38.8** | 12 | 46 |
-| `lat8` | 0 | 94.4 | **94.4** | 0 | (rerunning) |
+| `lat8` | 0 | 94.4 | **94.4** | 0 | 0 |
 
 None of them beats the empty span. The four token designs land within 0.6 nats of `none`, inside
 the seed noise: a second seed of `none` scores 37.8, of `pause4` 38.3. What each one taught us:
@@ -452,6 +452,22 @@ cosine loss. Inference runs the same two passes, so training and inference see t
 (`test_lat8p_trains_on_the_vectors_inference_writes`). Prediction, written before training: 37.5 to
 41 nats; no answer leaks in, so at best the vectors are 8 positions of extra compute plus a summary
 of the prompt.
+
+The leak is gone, and so is everything else the vectors could carry. The test is to feed the model,
+on the same 200 rows, either its own vectors or the vectors it wrote for a different prompt (`theog.cost --swap`), and
+compare the answer cost:
+
+| `lat8p` checkpoint | own vectors | another prompt's vectors | gap |
+|---|:-:|:-:|:-:|
+| step 1,000 | 112.2 | 112.7 | 0.5 |
+| step 2,000 | 66.7 | 66.9 | 0.2 |
+| step 4,000 | 41.8 | 41.9 | 0.1 |
+
+The gap shrinks as training goes on: the model learns to ignore its vectors. At step 4,000 its
+validation loss (0.475) sits between `pause4` (0.457) and `none` (0.484), where 8 more pause
+positions would put it. We stopped the run there, since 7,000 more steps can't make vectors that
+carry nothing beat the pause. Swap your vectors for someone else's before you trust them: if the
+cost doesn't move, they're pause tokens.
 
 ## What we conclude
 

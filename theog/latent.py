@@ -169,11 +169,15 @@ def think(model, ids: list[int]) -> torch.Tensor:
 
 
 @torch.no_grad()
-def nats(model, seq: dict) -> tuple[float, float]:
-    """(span nats, answer nats) with the model's OWN slot vectors (nothing from the answer)."""
+def nats(model, seq: dict, other: dict | None = None) -> tuple[float, float]:
+    """(span nats, answer nats) with the model's OWN slot vectors (nothing from the answer).
+    With `other`, the slots get the vectors the model wrote for that row's prompt instead."""
     ids, labels = seq["input_ids"], seq["labels"]
     t = ids.index(THINK)
     E = think(model, ids[:t + 1])
+    if other is not None:
+        o = other["input_ids"]
+        E = torch.cat([E[:, :-K], think(model, o[:o.index(THINK) + 1])[:, -K:]], 1)
     rest = model.embed(torch.tensor([ids[t + 1 + K:]], device=E.device))
     lp = torch.log_softmax((_hidden(model, torch.cat([E, rest], 1)) @ model.embed.weight.T)[0].float(), -1)
     a = ids.index(ANSWER)
