@@ -192,7 +192,7 @@ On HumanEval the table hides the name problem. The prompt *is* the function stub
 puts the whole prompt in front of the model's code, so the function always exists: when the model
 picks another name, the stub with only a docstring is what runs, returns `None`, and fails as
 "assert failed". On the 3-epoch run the model defines the function under the right name in only 62
-of 164 answers; of the other 102, 71 count as "assert failed" and 29 don't parse. Exercise 2.4 can't
+of 164 answers; of the other 102, 71 count as "assert failed", 29 don't parse and 2 fail as "no function named". Exercise 2.4 can't
 help here, because HumanEval's prompt already names the function. Counting the names is the same
 habit as counting the reasons: read what the model wrote, not only what the harness says.
 
