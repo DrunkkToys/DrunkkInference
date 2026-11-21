@@ -97,6 +97,9 @@ def add_tokenizer(w, tokenizer: Path, vocab_size: int) -> None:
 def export_gguf(model, tokenizer: Path, out: Path, quant: str = "F16", name: str = "theOG") -> str:
     import gguf
     cfg = model.cfg
+    spec = getattr(model, "attn_spec", {})
+    if set(spec) - {"kv"}:
+        raise SystemExit(f"attention {spec} is not in llama.cpp's qwen3 layout; only kv= exports")
     qtype = {"F16": gguf.GGMLQuantizationType.F16, "Q8_0": gguf.GGMLQuantizationType.Q8_0}[quant]
     out.parent.mkdir(parents=True, exist_ok=True)
     w = gguf.GGUFWriter(str(out), ARCH)
@@ -107,7 +110,7 @@ def export_gguf(model, tokenizer: Path, out: Path, quant: str = "F16", name: str
     w.add_block_count(cfg.layers)
     w.add_feed_forward_length(cfg.ffn)
     w.add_head_count(cfg.heads)
-    w.add_head_count_kv(cfg.heads)
+    w.add_head_count_kv(spec.get("kv", cfg.heads))
     w.add_key_length(cfg.head_dim)
     w.add_value_length(cfg.head_dim)
     w.add_rope_freq_base(cfg.rope_theta)
