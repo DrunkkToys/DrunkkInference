@@ -18,7 +18,7 @@ import numpy as np
 from tokenizers import Tokenizer
 
 from theog.format import sequence
-from theog.think import DESIGNS
+from theog.think import DESIGNS, build
 from theog.tokens import IGNORE, PAD
 
 SEQ_LEN = 2048
@@ -79,7 +79,7 @@ def pack(rows: Path, tokenizer: Path, out: Path, seq_len: int = SEQ_LEN, think: 
     with open(rows, encoding="utf-8") as f:
         for line in f:
             row = json.loads(line)
-            seq = sequence(tok, row["user"], row["answer"], think_for(row))
+            seq = build(tok, think, row, seq_len)
             if len(seq["input_ids"]) > seq_len:
                 n_long += 1
                 continue

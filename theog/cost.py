@@ -23,7 +23,7 @@ from tokenizers import Tokenizer
 
 from theog.format import sequence
 from theog.pack import split_of
-from theog.think import DESIGNS
+from theog.think import DESIGNS, build, span_answer
 
 LESSON_DESIGNS = "none,sig,shared,skeleton,plan"  # the rows lesson 6 scores
 from theog.tokens import ANSWER, IGNORE
@@ -52,7 +52,7 @@ def rows_for(tok: Tokenizer, rows: Path, fit: list[str], n: int, seq_len: int) -
             r = json.loads(line)
             if split_of(r["user"]) != "val":
                 continue
-            if all(len(sequence(tok, r["user"], r["answer"], DESIGNS[d](r))["input_ids"]) <= seq_len for d in fit):
+            if all(len(sequence(tok, r["user"], *span_answer(d, r)[::-1])["input_ids"]) <= seq_len for d in fit):
                 out.append(r)
                 if len(out) == n:
                     break
@@ -73,11 +73,17 @@ def main() -> None:
     tok = Tokenizer.from_file(str(a.tokenizer))
     dev = pick_device()
     model = load_model(a.ckpt, dev)
+    if a.think == "lat8p":
+        model.latent.own = True
     rows = rows_for(tok, a.rows, a.fit.split(","), a.n, a.seq_len)
     span = answer = 0.0
     for r in rows:
-        s = sequence(tok, r["user"], r["answer"], DESIGNS[a.think](r))
-        sn, an = nats(model, s["input_ids"], s["labels"])
+        s = build(tok, a.think, r, a.seq_len)
+        if a.think in ("lat8", "lat8p"):
+            from theog import latent
+            sn, an = latent.nats(model, s)
+        else:
+            sn, an = nats(model, s["input_ids"], s["labels"])
         span += sn
         answer += an
     n = len(rows)

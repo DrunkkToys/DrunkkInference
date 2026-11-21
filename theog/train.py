@@ -71,9 +71,12 @@ def evaluate(model, ids, lbl, n_windows, batch_size, device) -> float:
     for s in range(0, min(n_windows, len(ids)), batch_size):
         rows = list(range(s, min(s + batch_size, n_windows, len(ids))))
         x, y = batch(ids, lbl, rows, device)
-        logits = model(x)
         n = int((y != IGNORE).sum())
-        total += float(loss_fn(logits, y)) * n
+        if hasattr(model, "latent"):
+            from theog import latent
+            total += float(latent.loss(model, x, y)[1]) * n
+        else:
+            total += float(loss_fn(model(x), y)) * n
         count += n
     model.train()
     return total / max(1, count)
@@ -93,6 +96,14 @@ def train(packed: Path, out: Path, preset: str = "theog_50m", batch_size: int = 
 
     torch.manual_seed(seed)
     model = M.TheOG(cfg).to(device)
+    lat = meta.get("think") in ("lat8", "lat8p")
+    if lat:
+        from theog import latent
+        latent.add_head(model)
+        model.latent.own = meta["think"] == "lat8p"
+        step_loss = lambda x, y: latent.loss(model, x, y)[0]
+    else:
+        step_loss = lambda x, y: loss_fn(model(x), y)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, betas=(0.9, 0.95), eps=1e-8, weight_decay=0.01)
 
     steps = math.ceil(epochs * len(tr_ids) / batch_size)  # micro-batches
@@ -135,7 +146,7 @@ def train(packed: Path, out: Path, preset: str = "theog_50m", batch_size: int = 
     t0 = time.time()
     for step in range(start, steps):
         x, y = batch(tr_ids, tr_lbl, sorted(order[step * batch_size:(step + 1) * batch_size]), device)
-        loss = loss_fn(model(x), y)
+        loss = step_loss(x, y)
         (loss / accum).backward()  # gradients add up over `accum` micro-batches
         if (step + 1) % accum == 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -164,6 +175,9 @@ def train(packed: Path, out: Path, preset: str = "theog_50m", batch_size: int = 
 def load_model(ckpt: Path, device=None) -> M.TheOG:
     state = torch.load(ckpt, map_location=device or "cpu", weights_only=False)
     model = M.TheOG(M.Config(**state["config"]))
+    if any(k.startswith("latent.") for k in state["model"]):
+        from theog import latent
+        latent.add_head(model)
     model.load_state_dict(state["model"])
     return model.to(device or "cpu").eval()
 
