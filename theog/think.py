@@ -21,6 +21,7 @@ import io
 import keyword
 import re
 import tokenize
+import warnings
 
 from theog.data import function_name
 
@@ -290,3 +291,190 @@ def plan_for(row: dict) -> str:
 
 
 DESIGNS = {"none": lambda row: "", "sig": sig, "shared": shared, "skeleton": skeleton, "plan": plan_for}
+
+# Pause spans (Goyal et al. 2023): N copies of "~", one token each, no text.
+PAUSE = "~"
+DESIGNS.update({f"pause{n}": (lambda row, n=n: PAUSE * n) for n in (4, 16)})
+
+# Goyal et al. train with no loss on the pause positions: the pauses are fixed, so at
+# inference they are written into the prompt, not generated. pause4nl = pause4 with that mask.
+DESIGNS["pause4nl"] = lambda row: PAUSE * 4
+NO_LOSS = {"pause4nl"}
+
+
+def mask_pauses(seq: dict, pause_id: int) -> dict:
+    """Set to IGNORE every label that predicts a pause token inside the think span."""
+    from theog.tokens import IGNORE, THINK_CLOSE
+    ids, labels = seq["input_ids"], seq["labels"]
+    close = ids.index(THINK_CLOSE)
+    for i in range(close):
+        if labels[i] == pause_id and ids[i + 1] == pause_id:
+            labels[i] = IGNORE
+    return seq
+
+
+# Coarse to fine, with nothing written twice. The span is the code with every block deeper than
+# `depth` indent levels replaced by one "..." line; the answer is those blocks, in order, separated
+# by "..." lines. Span and answer together hold exactly the code's lines, so the total cost
+# compares directly with `none`: only the order in which the model writes the code changes.
+HOLE = "..."
+
+
+def _unit(lines: list[str]) -> int:
+    ind = [len(l) - len(l.lstrip(" ")) for l in lines if l.strip()]
+    ind = [i for i in ind if i > 0]
+    return min(ind) if ind else 4
+
+
+def coarse_fine(code: str, depth: int) -> tuple[str, str]:
+    lines = code.split("\n")
+    unit, span, blocks, cur, d_prev = _unit(lines), [], [], None, 0
+    for l in lines:
+        d = (len(l) - len(l.lstrip(" "))) // unit if l.strip() else d_prev
+        d_prev = d
+        if d > depth:
+            if cur is None:
+                cur = []
+                blocks.append(cur)
+                span.append(" " * (len(l) - len(l.lstrip(" "))) + HOLE)
+            cur.append(l)
+        else:
+            cur = None
+            span.append(l)
+    return "\n".join(span), f"\n{HOLE}\n".join("\n".join(b) for b in blocks)
+
+
+def fine_into_coarse(span: str, answer: str) -> str:
+    """Put the answer's blocks back into the span's holes: the inverse of coarse_fine."""
+    blocks = answer.split(f"\n{HOLE}\n") if answer else []
+    out, k = [], 0
+    for l in span.split("\n"):
+        if l.strip() == HOLE and k < len(blocks):
+            out.append(blocks[k])
+            k += 1
+        else:
+            out.append(l)
+    return "\n".join(out)
+
+
+# REORDER designs return (span, answer) instead of a span: the answer is no longer the whole code.
+REORDER = {f"c2f{d}": (lambda row, d=d: coarse_fine(row["answer"], d)) for d in (0, 1)}
+DESIGNS.update({k: (lambda row, k=k: REORDER[k](row)[0]) for k in REORDER})
+
+
+def span_answer(design: str, row: dict) -> tuple[str, str]:
+    """(think text, answer text) of a row under a design."""
+    if design in REORDER:
+        return REORDER[design](row)
+    return DESIGNS[design](row), row["answer"]
+
+
+# Prompt-only spans. psig is computed from the prompt alone (its first assert), so at inference
+# the harness writes it into the prompt: the model never pays for it. Its labels are IGNORE in
+# training and in theog.cost, and any saving on the answer is a pure gain.
+_KINDS = {"list": "list", "str": "str", "int": "int", "float": "float", "bool": "bool",
+          "tuple": "tuple", "dict": "dict", "set": "set", "none": "NoneType"}
+
+
+def _def_sig(user: str) -> str | None:
+    """The signature from the last `def` the prompt writes (HumanEval prompts have no assert)."""
+    defs = re.findall(r"^def\s+([A-Za-z_]\w*)\s*\((.*?)\)\s*(?:->\s*(.+?))?\s*:\s*$", user, re.M)
+    if not defs:
+        return None
+    name, args, ret = defs[-1]
+    try:
+        n = len(ast.parse(f"def f({args}): pass").body[0].args.args)
+    except SyntaxError:
+        return None
+    head = re.match(r"\w+", (ret or "").strip())
+    kind = _KINDS.get(head.group(0).lower(), "?") if head else "?"
+    return f"def {name}({n} {'arg' if n == 1 else 'args'}) -> {kind}"
+
+
+def psig(row: dict) -> str:
+    m = re.search(r"^\s*assert\s+(?:not\s+)?([A-Za-z_]\w*\(.*)$", row["user"], re.M)
+    if not m:
+        d = _def_sig(row["user"])
+        if d:
+            return d
+        e = re.search(r"(?:function|method)\s+(?:named\s+|called\s+)?`([A-Za-z_]\w*)`", row["user"])
+        return f"def {e.group(1)}(?) -> ?" if e else "def ?"
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            node = ast.parse(m.group(1).strip()).body[0].value
+    except SyntaxError:
+        return "def ?"
+    call, out = (node.left, node.comparators[0]) if isinstance(node, ast.Compare) else (node, None)
+    if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Name):
+        return "def ?"
+    kind = "?"
+    if out is not None:
+        try:
+            kind = type(ast.literal_eval(out)).__name__
+        except (ValueError, SyntaxError, TypeError):
+            pass
+    n = len(call.args) + len(call.keywords)
+    return f"def {call.func.id}({n} {'arg' if n == 1 else 'args'}) -> {kind}"
+
+
+PREFILL = {"psig": psig, "psig_c2f1": psig}
+DESIGNS["psig"] = psig
+REORDER["psig_c2f1"] = lambda row: (psig(row) + "\n" + coarse_fine(row["answer"], 1)[0],
+                                    coarse_fine(row["answer"], 1)[1])
+DESIGNS["psig_c2f1"] = lambda row: REORDER["psig_c2f1"](row)[0]
+
+
+def mask_prefill(seq: dict, tok, text: str) -> bool:
+    """IGNORE the labels of the first `text` of the span: the part the harness writes at
+    inference (prompt-only or retrieved), so the model never pays for it. False if the tokens
+    don't line up."""
+    from theog.tokens import IGNORE, THINK
+    ids, labels = seq["input_ids"], seq["labels"]
+    pre = tok.encode(f"\n{text}\n").ids
+    t = ids.index(THINK)
+    if ids[t + 1:t + 1 + len(pre)] != pre:
+        pre = pre[:-1]  # the trailing newline may merge with what follows
+        if ids[t + 1:t + 1 + len(pre)] != pre:
+            return False
+    for i in range(t, t + len(pre)):
+        labels[i] = IGNORE
+    return True
+
+
+# Retrieval span (theog/retrieve.py): the nearest training solution, found from the prompt alone.
+from theog.retrieve import retr  # noqa: E402
+
+PREFILL["retr"] = retr
+DESIGNS["retr"] = retr
+
+
+def shrink(text: str, fits) -> str:
+    """Drop the span's last lines until fits(text) is true (a retrieved span may be long)."""
+    lines = text.split("\n")
+    while len(lines) > 1 and not fits("\n".join(lines)):
+        lines = lines[:-2] + ["..."] if lines[-1] == "..." else lines[:-1] + ["..."]
+        if lines[-2:] == ["...", "..."]:
+            lines = lines[:-1]
+    return "\n".join(lines)
+
+
+def build(tok, design: str, row: dict, seq_len: int = 512) -> dict:
+    """The training sequence of a row under a design, with every mask applied.
+    A retrieved span is shortened until the row fits seq_len."""
+    from theog.format import sequence
+    if design in ("lat8", "lat8p"):
+        from theog import latent
+        return latent.sequence(tok, row["user"], row["answer"])
+    span, answer = span_answer(design, row)
+    if design == "retr":
+        span = shrink(span, lambda s: len(sequence(tok, row["user"], answer, s)["input_ids"]) <= seq_len)
+    seq = sequence(tok, row["user"], answer, span)
+    if design in NO_LOSS:
+        mask_pauses(seq, tok.token_to_id(PAUSE))
+    if design in PREFILL:
+        mask_prefill(seq, tok, span if design == "retr" else PREFILL[design](row))
+    return seq
+
+DESIGNS["lat8"] = lambda row: ""  # continuous: theog/latent.py builds its sequence
+DESIGNS["lat8p"] = DESIGNS["lat8"]
