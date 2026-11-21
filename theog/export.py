@@ -15,7 +15,6 @@ import json
 from pathlib import Path
 
 import numpy as np
-import torch
 
 ARCH = "qwen3"
 # course name under blocks.{i}. -> GGUF name under blk.{i}.

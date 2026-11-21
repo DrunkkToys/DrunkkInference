@@ -155,6 +155,8 @@ def main() -> None:
     a = ap.parse_args()
     if a.ckpt and not a.tokenizer:
         ap.error("--ckpt needs --tokenizer")
+    if a.hf and (a.think or a.temperature):
+        ap.error("--hf scores greedy plain completion: --think and --temperature don't apply to it")
 
     tasks = load_tasks(a.dataset)[: a.limit or None]
     if a.ckpt:

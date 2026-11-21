@@ -95,7 +95,9 @@ The stops come from `STOPS` and the parameters from `SAMPLING`, both at the top 
 last line is `num_ctx`, the model's context, which the export passes in. End with one newline.
 
 Without the `PARAMETER` lines Ollama uses its own defaults (temperature 0.8, a repeat penalty), and
-your model would behave differently from your evaluation in lesson 7.
+your model would behave differently from `theog.generate` in lesson 5, which samples at temperature
+0.2 and top-k 40 like these lines. Lesson 7 scores greedy (temperature 0), so to reproduce a lesson 7
+answer in Ollama, pass temperature 0, as step 3 below does.
 
 ```bash
 uv run pytest tests/test_08_export.py
