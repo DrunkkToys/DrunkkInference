@@ -59,3 +59,19 @@ def test_checkpoint_keeps_the_spec(tmp_path):
 def test_overrides_are_typed():
     assert _overrides("heads=8,head_dim=32,rope_theta=1e6") == {"heads": 8, "head_dim": 32, "rope_theta": 1e6}
     assert attnlab.parse("kv=2,gate=1") == {"kv": 2, "gate": 1} and attnlab.parse("") == {}
+
+
+@pytest.mark.parametrize("spec", [{}, {"kv": 2}, {"qknorm": 0}])
+def test_attention_maps_are_causal_distributions(spec):
+    cfg = replace(tiny(), heads=4, head_dim=16)
+    torch.manual_seed(0)
+    m = TheOG(cfg)
+    if spec:
+        attnlab.apply(m, spec)
+    E = m.embed(torch.randint(0, cfg.vocab_size, (1, 12)))
+    maps = attnlab.attention_maps(m, E)
+    assert len(maps) == cfg.layers
+    for p in maps:
+        assert p.shape == (cfg.heads, 12, 12)
+        assert torch.allclose(p.sum(-1), torch.ones(cfg.heads, 12), atol=1e-5)
+        assert p.triu(1).abs().max() == 0  # nothing looks ahead

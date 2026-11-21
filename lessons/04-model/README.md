@@ -38,6 +38,8 @@ token ids
 | [6](6-swiglu.md) | the SwiGLU MLP | `SwiGLU.forward` | `-k step6` |
 | [7](7-block.md) | a block and the residual stream | `Block.forward` | `-k step7` |
 | [8](8-full-model.md) | the whole model, tied output | `TheOG.forward` | `-k step8` |
+| [9](9-reading-attention.md) | reading the attention of a trained model | nothing: run it | `test_04_attnlab.py` |
+| [10](10-attention-experiments.md) | changing the attention: GQA, heads, a gate | your prediction | `test_04_attnlab.py` |
 
 Run one step's tests with:
 
@@ -51,5 +53,9 @@ a snippet from the repo root by pasting it into `uv run python`. Each step print
 should get. If yours differs, your function differs.
 
 Do the steps in order. Each test only uses the steps before it.
+
+Steps 9 and 10 are the odd ones out. They need a *trained* model, so skip them now and come back
+after lesson 5. That's where it gets fun: you stop asking what attention computes and start asking
+what your model actually does with it. Spoiler: not what the diagrams say.
 
 Start: [step 1, the embedding](1-embedding.md).

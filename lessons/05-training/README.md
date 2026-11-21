@@ -403,4 +403,7 @@ about 0.9% of that, read three times, on a model a sixth the size.
 
 </details>
 
-Next: [lesson 6, the /think span](../06-think-span/README.md).
+You have a trained model now. Before lesson 6, go back to lesson 4 for two steps that needed one:
+[step 9, reading the attention](../04-model/9-reading-attention.md), and [step 10, changing
+it](../04-model/10-attention-experiments.md). Or skip them and go straight to [lesson 6, the /think
+span](../06-think-span/README.md).
