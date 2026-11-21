@@ -69,8 +69,8 @@ def clean(rows: Path, out: Path, index: Index) -> Counter:
             row = json.loads(line)
             hit = index.hits(row["user"] + "\n" + row["answer"])
             if hit:
-                for h in hit:
-                    flagged[h.split(":")[0]] += 1
+                for task in {h.split(":")[0] for h in hit}:  # one row, counted once per task
+                    flagged[task] += 1
                 continue
             w.write(line)
             kept += 1
