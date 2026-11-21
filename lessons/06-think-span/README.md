@@ -478,6 +478,49 @@ cost nothing to write save nothing either, beyond the noise. That's a result abo
 not about think spans: the question for a bigger model is whether its span cost falls faster than
 its answer cost, and `theog.cost` measures exactly that.
 
+## Why we ran them all
+
+Why train six designs when the theory already tells you which one should win? Because the
+theory was wrong six times out of six. I wrote every prediction down before the run, so I
+couldn't quietly bend it afterwards. Here's the scoreboard:
+
+| design | what the argument said | what the run said |
+|---|---|---|
+| `retr` | the closest training solution brings knowledge the model doesn't have: 30 to 36 nats | 38.8. Worse than the empty span |
+| `c2f1` | outline first, fills after, nothing written twice: cheaper | 25.6 + 13.5 = 39.1. Same work, new order |
+| `psig` | a signature read from the prompt is free and correct | 1 of 164 on HumanEval. No `assert` there, so the span said `def ?` on every task |
+| `lat8` | vectors on the road from the prompt to the code. At step 1,000 its val loss beats `none`'s | 94.4 nats, 0 and 0. The val loss was a lie: the vectors carried the answer |
+| `lat8p` | no leak, so the vectors carry a summary of the prompt | swap them for another prompt's: 41.8 vs 41.9. They carry nothing |
+| `pause4` | extra positions to think in | same score as `none`, on different tasks: 28 MBPP tasks pass only with one, 28 only with the other |
+
+The arguments weren't stupid. They were blind. None of them could see that only 9 of 95,483
+training prompts look like HumanEval, that HumanEval prompts have no `assert`, that the target
+vectors held the answer, or that a small model ignores any input it can live without. Every one of
+those showed up the same way: a number that didn't fit the story.
+
+One run proves nothing. Two runs of the same design with different seeds land 0.7 nats apart. A
+design scored alone is an anecdote; six designs on the same 1,000 rows, same seed, same scoring,
+are an experiment. So far none of them clears the noise. That's a result too, just not the one
+anybody wanted.
+
+Every dead design takes a whole family of ideas with it: text built from the code, reordering the
+code, free tokens from the prompt, vectors instead of words. Measured, not argued. That's how you
+get closer to the right answer: not by being clever, by being wrong faster. And sometimes two
+half-results point somewhere. `psig` nudged MBPP, `retr` nudged HumanEval. You only notice if you
+ran both, which is why the next run puts them together.
+
+What keeps the numbers honest:
+
+- The prediction goes in writing before the run. A theory that can't lose isn't a theory.
+- Same rows, same seed, same scoring, every time.
+- The benchmarks and the dataset don't change. Rewrite a benchmark prompt and you're measuring your
+  edit, not the model.
+- Every number gets checked against its log. Mine included: I once pinned two validation losses
+  on the wrong runs, and only rereading each log one by one caught it.
+
+Theory tells you what to try. The data tells you what's true. At 8M parameters the empty span wins,
+and not one of our arguments said it would.
+
 ## What it did for theOG
 
 At 50M parameters and 2.49B tokens, theOG's empty span starts to matter. theOG-50M v3, from the
