@@ -98,16 +98,16 @@ arguments. If one of these surprises me, good. That's the run worth having.
 | `h8x32` | 39.9 | 5 | 43 | worse: 1.4 nats behind, outside the noise. Benchmarks 4 to 1 and 23 to 17 against it, both coin flips. I said maybe a small gain. Wrong way |
 | `gate` | 36.5 | 12 | 59 | better on cost: 2.0 nats, three times the seed noise. I said a tie. Wrong, the good way. Benchmarks 9 to 5 (p = 0.42) and 29 to 19 (p = 0.19) its way: pointing right, not proven. One seed, so a candidate, not a result |
 | `kv1` | 39.9 | 3 | 49 | worse: 1.4 nats behind, outside the noise, 7.1% fewer parameters. HumanEval 6 to 1 against it (p = 0.125), MBPP 22 to 22. I said a bit worse: right on MBPP, just short on cost (38.8–39.8) and on HumanEval (5–9). `kv2` also scored 3, and 2 of the 3 tasks are the same: sharing the k/v heads hits HumanEval, not MBPP |
-| `h2x128` | | | | not run yet |
-| `theta1e6` | | | | not run yet |
-| `noqk` | | | | not run yet |
+
+`h2x128`, `theta1e6` and `noqk` I didn't run. My predictions for them are above: yours to prove
+wrong.
 
 So the gate is the first change in this course to beat the baseline on cost. By the rule I wrote
 above, that's a success. At one seed. Remember what lesson 7's seed check did to `psr`'s MBPP lead?
-It flipped. The gate gets a second seed before I call it anything.
+It flipped. Until a second seed agrees, the gate is a candidate, nothing more.
 
 The predictions above were committed before the first run started. Git has the date. When the
-numbers land here, they land next to what I said they'd be, wrong ones included.
+numbers landed here, they landed next to what I said they'd be, wrong ones included.
 
 ## Try it
 
