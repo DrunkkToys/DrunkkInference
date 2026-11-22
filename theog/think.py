@@ -1,11 +1,11 @@
-"""Lesson 6: what goes inside the think span, <|Think|> ... <|/Think|>.
+"""Lesson 7: what goes inside the think span, <|Think|> ... <|/Think|>.
 
 Every design is a fixed rule (row) -> text, computed from the prompt and the
 code of a training row. No model writes it. Pack with one design:
 
   uv run python -m theog.pack ... --think sig
 
-and lesson 6 compares them with theog.cost.
+and lesson 7 compares them with theog.cost.
 
   none      empty span (theOG's own design)
   sig       the code's def line(s): commit to the signature first

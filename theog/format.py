@@ -18,7 +18,7 @@ from theog.tokens import (ANSWER, ANSWER_CLOSE, ASSISTANT, END, IGNORE, THINK, T
 
 def prompt_ids(tok: Tokenizer, user: str, think: bool = False) -> list[int]:
     """What the model reads before it writes. /no_think closes the think span
-    for the model; /think leaves it open (lesson 6)."""
+    for the model; /think leaves it open (lesson 7)."""
     mode = "think" if think else "no_think"
     head = [USER] + tok.encode(f"\n{user.strip()} /{mode}\n").ids + [USER_CLOSE, ASSISTANT]
     return head + ([THINK] if think else [THINK, THINK_CLOSE, ANSWER])

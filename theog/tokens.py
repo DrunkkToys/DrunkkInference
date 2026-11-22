@@ -9,7 +9,7 @@ SPECIAL_TOKENS = [
     "<|User|>",       # 1  opens the user turn
     "<|/User|>",      # 2  closes it
     "<|Assistant|>",  # 3  the model's turn starts
-    "<|Think|>",      # 4  opens the think span (lesson 6)
+    "<|Think|>",      # 4  opens the think span (lesson 7)
     "<|/Think|>",     # 5  closes it
     "<|Answer|>",     # 6  opens the answer
     "<|/Answer|>",    # 7  closes it: generation stops here

@@ -1,4 +1,4 @@
-"""Lesson 6, retrieval span: the code of the closest TRAINING task, found from the prompt alone.
+"""Lesson 7, retrieval span: the code of the closest TRAINING task, found from the prompt alone.
 
 Every span so far was built from the prompt or from the row's own code, so it carried nothing the
 model didn't already have. This one brings in information from outside the weights: the solution

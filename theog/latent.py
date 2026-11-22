@@ -1,4 +1,4 @@
-"""Lesson 6, latent interpolation: the think span is K continuous vectors, not tokens.
+"""Lesson 7, latent interpolation: the think span is K continuous vectors, not tokens.
 
 Slot k of K holds the point k/(K+1) of the way from the prompt to the code:
 

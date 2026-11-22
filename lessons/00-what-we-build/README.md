@@ -24,7 +24,7 @@ you can compare. The full track is the same commands with bigger numbers. Each l
 "full track" note.
 
 Set your expectations for the laptop model now, so it doesn't disappoint you later: 8M parameters
-trained for 2½ hours writes code that *looks* right much more often than it *is* right. Lesson 7
+trained for 2½ hours writes code that *looks* right much more often than it *is* right. Lesson 6
 shows you exactly how often it is right. That gap, and what closes it, is most of what there is to
 learn about small models.
 
@@ -44,7 +44,7 @@ scores on HumanEval, MBPP-500 and graded-30, measured on the same harness as Cod
 
 ```
 Hugging Face datasets ─► rows.jsonl ─► tokenizer.json ─► packed windows ─► model ─► best.pt ─► scores ─► .gguf ─► Ollama
-      lesson 2            lesson 2       lesson 1          lesson 3        lesson 4  lesson 5   lesson 7  lesson 8
+      lesson 2            lesson 2       lesson 1          lesson 3        lesson 4  lesson 5   lesson 6  lesson 8
 ```
 
 | lesson | you write | file |
@@ -54,8 +54,8 @@ Hugging Face datasets ─► rows.jsonl ─► tokenizer.json ─► packed wind
 | 3 | one training sequence with its labels, and the packer | `theog/format.py`, `theog/pack.py` |
 | 4 | the transformer, in 8 steps, plus 2 you come back for once you have a trained model | `theog/model.py` |
 | 5 | the learning-rate schedule, the loss, the sampler, the prompt, generation | `theog/train.py`, `theog/format.py`, `theog/generate.py` |
-| 6 | which tokens the prompt grounds, what a think span costs, and an experiment | `theog/think.py`, `theog/cost.py` |
-| 7 | answer extraction and the sandboxed test runner | `theog/generate.py`, `theog/evaluate.py` |
+| 6 | answer extraction and the sandboxed test runner | `theog/generate.py`, `theog/evaluate.py` |
+| 7 | which tokens the prompt grounds, what a think span costs, and an experiment | `theog/think.py`, `theog/cost.py` |
 | 8 | the weight mapping for GGUF, the Ollama Modelfile | `theog/export.py` |
 | 9 | your model card and release | — |
 
@@ -82,8 +82,8 @@ lesson                       tests
 3  format + packing          to do  2 failed, 4 errors in 0.69s
 4  model                     to do  14 failed, 1 passed in 12.73s
 5  training + generation     to do  3 failed, 4 errors in 2.04s
-6  think span                to do  3 failed, 3 passed, 3 errors in 2.32s
-7  evaluation                to do  3 failed in 1.91s
+6  evaluation                to do  3 failed in 1.91s
+7  think span                to do  3 failed, 3 passed, 3 errors in 2.32s
 8  export                    to do  3 failed, 1 error in 2.20s
 ```
 

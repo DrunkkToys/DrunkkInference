@@ -65,7 +65,7 @@ class Packer:
 
 
 def pack(rows: Path, tokenizer: Path, out: Path, seq_len: int = SEQ_LEN, think: str = "none") -> dict:
-    """`think` names the lesson 6 design that fills every row's think span."""
+    """`think` names the lesson 7 design that fills every row's think span."""
     think_for = DESIGNS[think]
     tok = Tokenizer.from_file(str(tokenizer))
     if tok.get_vocab_size() > 32767:
@@ -108,7 +108,7 @@ def main() -> None:
     ap.add_argument("--tokenizer", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--seq-len", type=int, default=SEQ_LEN)
-    ap.add_argument("--think", choices=DESIGNS, default="none", help="what fills the think span (lesson 6)")
+    ap.add_argument("--think", choices=DESIGNS, default="none", help="what fills the think span (lesson 7)")
     a = ap.parse_args()
     meta = pack(a.rows, a.tokenizer, a.out, a.seq_len, a.think)
     print(json.dumps(meta, indent=2))

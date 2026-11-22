@@ -1,4 +1,4 @@
-"""Lesson 6: what a think design costs the model, in nats per row.
+"""Lesson 7: what a think design costs the model, in nats per row.
 
   uv run python -m theog.cost --ckpt runs/think-sig/final.pt --tokenizer data/tokenizer.json --think sig
 
@@ -25,7 +25,7 @@ from theog.format import sequence
 from theog.pack import split_of
 from theog.think import DESIGNS, build, span_answer
 
-LESSON_DESIGNS = "none,sig,shared,skeleton,plan"  # the rows lesson 6 scores
+LESSON_DESIGNS = "none,sig,shared,skeleton,plan"  # the rows lesson 7 scores
 from theog.tokens import ANSWER, IGNORE
 from theog.train import load_model, pick_device
 
@@ -74,7 +74,7 @@ def main() -> None:
     ap.add_argument("--rows", type=Path, default=Path("data/rows.clean.jsonl"))
     ap.add_argument("--think", choices=DESIGNS, required=True, help="the design the model was trained with")
     ap.add_argument("--fit", default=LESSON_DESIGNS,
-                    help="designs every scored row must fit in (keep the default to compare with lesson 6)")
+                    help="designs every scored row must fit in (keep the default to compare with lesson 7)")
     ap.add_argument("--n", type=int, default=1000)
     ap.add_argument("--swap", action="store_true",
                     help="lat8/lat8p: give each row the vectors written for the next row's prompt")
