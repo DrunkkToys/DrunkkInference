@@ -97,7 +97,7 @@ arguments. If one of these surprises me, good. That's the run worth having.
 | `kv2` | 38.6 | 3 | 48 | a tie, 4.7% fewer parameters. HumanEval splits 7 to 2 against it (p = 0.18), MBPP 22 to 21: neither is a result. My HumanEval range (6–10) was still wrong |
 | `h8x32` | 39.9 | 5 | 43 | worse: 1.4 nats behind, outside the noise. Benchmarks 4 to 1 and 23 to 17 against it, both coin flips. I said maybe a small gain. Wrong way |
 | `gate` | 36.5 | 12 | 59 | better on cost: 2.0 nats, three times the seed noise. I said a tie. Wrong, the good way. Benchmarks 9 to 5 (p = 0.42) and 29 to 19 (p = 0.19) its way: pointing right, not proven. One seed, so a candidate, not a result |
-| `kv1` | | | | not run yet |
+| `kv1` | 39.9 | 3 | 49 | worse: 1.4 nats behind, outside the noise, 7.1% fewer parameters. HumanEval 6 to 1 against it (p = 0.125), MBPP 22 to 22. I said a bit worse: right on MBPP, just short on cost (38.8–39.8) and on HumanEval (5–9). `kv2` also scored 3, and 2 of the 3 tasks are the same: sharing the k/v heads hits HumanEval, not MBPP |
 | `h2x128` | | | | not run yet |
 | `theta1e6` | | | | not run yet |
 | `noqk` | | | | not run yet |
