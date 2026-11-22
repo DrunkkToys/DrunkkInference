@@ -201,7 +201,7 @@ tests:  assert is_palindrome("No lemon, no melon") == True
 ```
 
 The prompt never says the function is called `is_palindrome`. Train on 68,000 rows like this and
-the model learns that it picks the name. Then lesson 7 asks it for `remove_vowels`, it writes a
+the model learns that it picks the name. Then lesson 6 asks it for `remove_vowels`, it writes a
 perfect `remove_vowel_chars`, and the test fails with "no function named remove_vowels".
 
 This isn't a guess. The first version of this course trained without this rule, and the laptop
@@ -273,7 +273,7 @@ the counts on real data are the real check.
 
 ## Contamination: don't train on the exam
 
-Lesson 7 scores the model on HumanEval and MBPP. If a training row contains one of those tasks, the
+Lesson 6 scores the model on HumanEval and MBPP. If a training row contains one of those tasks, the
 model answers it from memory, and the score measures memory, not skill. Public code datasets often
 contain benchmark tasks, copied in by someone, somewhere.
 
@@ -346,7 +346,7 @@ kept 95,483 rows; dropped rows matching 90 benchmark tasks
 ```
 
 The first run downloads HumanEval and MBPP (a few MB). 282 rows matched 90 benchmark tasks: one MBPP
-task alone had 60 near-copies in the training data. Without this step, your lesson 7 score would
+task alone had 60 near-copies in the training data. Without this step, your lesson 6 score would
 include those tasks answered from memory.
 
 Before exercise 2.4, the same check matched only 58 tasks. The test lines it added made some rows
@@ -380,7 +380,7 @@ the rules that drop the most rows.
 2. On the laptop data, before the contamination check: 1 per shape keeps 82,306 rows, 3 keeps
    95,765, 10 keeps 107,169. Going from 3 to 1 throws away 13,000 rows that differ from a kept row
    only in names; going to 10 lets 11,000 of them back in. Whether the model gets better or worse is
-   a question for lesson 7, not for intuition: retrain and compare the scores.
+   a question for lesson 6, not for intuition: retrain and compare the scores.
 3. Dedup keeps the first copy it sees. Reading the source with passing unit tests first means that
    when the same task is in both, the verified answer wins.
 

@@ -55,7 +55,8 @@ should get. If yours differs, your function differs.
 Do the steps in order. Each test only uses the steps before it.
 
 Steps 9 and 10 are the odd ones out. They need a *trained* model, so skip them now. Step 9 comes
-after lesson 5. Step 10 comes after lesson 7, because it scores every change on HumanEval and MBPP.
+after lesson 5. Step 10 comes after lesson 7: it scores every change on HumanEval and MBPP
+(lesson 6), the way lesson 7 scores its span designs.
 That's where it gets fun: you stop asking what attention computes and start asking
 what your model actually does with it. Spoiler: not what the diagrams say.
 

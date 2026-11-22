@@ -1,4 +1,4 @@
-"""Lesson 6: every think design is a fixed rule (row) -> text, and its cost is measured in nats."""
+"""Lesson 7: every think design is a fixed rule (row) -> text, and its cost is measured in nats."""
 import io
 import json
 import re
@@ -35,7 +35,7 @@ def _tok(code):
     return [t for t in tokenize.generate_tokens(io.StringIO(code).readline) if t.string.strip()]
 
 
-# --- exercise 6.1: grounded ---------------------------------------------------
+# --- exercise 7.1: grounded ---------------------------------------------------
 
 def test_grounded_names_numbers_and_strings():
     prompt = "Return 'yes' if n is above 10, else 'no'. Use a loop."
@@ -111,7 +111,7 @@ def test_pack_writes_the_design_into_the_span(tokenizer_file, tmp_path):
     assert tok.decode(ids[t + 1:ids.index(THINK_CLOSE, t)]).strip() == "def count_char_freq(s):"
 
 
-# --- exercise 6.2: nats -----------------------------------------------------------
+# --- exercise 7.2: nats -----------------------------------------------------------
 
 def test_nats_splits_the_loss_at_answer(tokenizer_file):
     tok = Tokenizer.from_file(str(tokenizer_file))

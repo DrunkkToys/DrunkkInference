@@ -113,7 +113,7 @@ result as one batch of 32.
 windows, tasks it never trains on (lesson 3). Training loss always goes down. Validation loss tells
 you whether what it learns carries over to new tasks.
 
-- `best.pt`: the weights with the lowest validation loss so far. Lessons 7 and 8 use this one.
+- `best.pt`: the weights with the lowest validation loss so far. Lessons 6 and 8 use this one.
 - `resume.pt`: weights plus optimizer state. Run the same command again and it continues from here,
   reading the same batches the interrupted run would have read.
 - `final.pt`: the weights after the last step.
@@ -184,8 +184,8 @@ number of passes:
 |---|:-:|:-:|
 | training time on an M2 | 48 minutes | 2 h 34 min |
 | final validation loss | 0.449 | 0.270 |
-| MBPP-500 (lesson 7) | 19/500 | 49/500 |
-| HumanEval-164 (lesson 7) | 2/164 | 8/164 |
+| MBPP-500 (lesson 6) | 19/500 | 49/500 |
+| HumanEval-164 (lesson 6) | 2/164 | 8/164 |
 
 Repeating data stops paying at some point. [Muennighoff et al., 2023](https://arxiv.org/abs/2305.16264)
 found that up to about 4 passes are worth almost as much as new data, and that the gain fades after
@@ -239,13 +239,13 @@ def sample(logits, temperature=0.2, top_k=40):
 At generation time there is no answer yet: the model reads the prompt and writes the rest. The
 prompt must be **exactly** the start of what `sequence()` built in lesson 3, down to the last
 newline. A model this small has only ever seen those exact ids, and one extra space is a prompt it
-has never seen (lesson 6 shows what that does).
+has never seen (lesson 7 shows what that does).
 
 - The same head as `sequence()`: `[USER]` + the tokens of `"\n{user.strip()} /{mode}\n"` +
   `[USER_CLOSE, ASSISTANT]`, with `mode` `"think"` or `"no_think"`.
 - `/no_think` (`think=False`): add `[THINK, THINK_CLOSE, ANSWER]`. The span is closed for the
   model, so its first token starts the answer.
-- `/think` (`think=True`): add only `[THINK]`. The model closes the span itself (lesson 6).
+- `/think` (`think=True`): add only `[THINK]`. The model closes the span itself (lesson 7).
 
 ```bash
 uv run pytest tests/test_05_train.py -k prompt
@@ -375,7 +375,7 @@ def reverse_words(s):
 
 Right. After one epoch the same model reversed the letters of each word instead (`"olleh dlrow"`),
 a different, common task. That kind of answer, code that runs but does the wrong thing, is still
-the laptop model's commonest failure. Lesson 7 counts it.
+the laptop model's commonest failure. Lesson 6 counts it.
 
 `--temperature 0` gives the same answer every time. Leave it out (the default is 0.2) and the
 sampler draws, so your output will vary.
@@ -411,4 +411,4 @@ about 0.9% of that, read three times, on a model a sixth the size.
 
 You have a trained model now. So what is it actually doing in there? Go back to lesson 4 and find
 out: [step 9, reading the attention](../04-model/9-reading-attention.md). A couple of minutes, no
-training. Or skip it and go straight to [lesson 6, the /think span](../06-think-span/README.md).
+training. Or skip it and go straight to [lesson 6, evaluation](../06-evaluation/README.md).

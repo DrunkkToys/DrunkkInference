@@ -1,4 +1,4 @@
-# Lesson 7: evaluation
+# Lesson 6: evaluation
 
 **You write:** the code that pulls the answer out of the model's text, and the sandboxed test
 runner. **You get:** your model's real score on HumanEval and MBPP, and a file showing every answer
@@ -20,15 +20,15 @@ tests run without error. The score is the number of tasks passed.
 ## How a task is run: `theog/evaluate.py`
 
 1. The model gets the task in its chat format and writes an answer (`generate`, lesson 5).
-2. `extract_code()` takes the code out of the ```` ```python ```` block. **Exercise 7.1.**
+2. `extract_code()` takes the code out of the ```` ```python ```` block. **Exercise 6.1.**
 3. For HumanEval, the prompt's own imports and helper functions are put back in front, because the
    model was only asked for the one function.
 4. `run_tests()` runs the code and the tests in a fresh Python process with a time limit.
-   **Exercise 7.2.**
+   **Exercise 6.2.**
 5. Each task prints PASS or FAIL with the reason, and the results file keeps the raw output and the
    code, so any score can be checked by reading what the model wrote.
 
-### Exercise 7.1: `extract_code` in `theog/generate.py`
+### Exercise 6.1: `extract_code` in `theog/generate.py`
 
 The model writes something like `"\n```python\ndef f(x):\n    return x\n```\n"`. Return what's
 inside the fence, stripped. Two cases to get right:
@@ -49,7 +49,7 @@ def extract_code(text):
 
 </details>
 
-### Exercise 7.2: `run_tests` in `theog/evaluate.py`
+### Exercise 6.2: `run_tests` in `theog/evaluate.py`
 
 The model's code is untrusted. It can loop forever, call `sys.exit()`, or overwrite the function the
 tests call. Running it with `exec` inside the harness would let it break the harness, so each task
@@ -69,7 +69,7 @@ You write the side that starts it:
    `(False, "crashed: " + the last line of stderr)`.
 
 ```bash
-uv run pytest tests/test_07_evaluate.py
+uv run pytest tests/test_06_evaluate.py
 ```
 
 All 3 should pass. The second test checks every failure reason, including a real infinite loop.
@@ -236,8 +236,8 @@ Open the results file to see any answer in full:
    HumanEval/26 passes in both modes. Three epochs helped `/no_think` and did nothing for `/think`.
    The reason is in lesson 3's `sequence()`: every training row is written in `/no_think` mode, so
    the model has never seen a prompt ending in `/think`. The more it trains on one mode, the more
-   the other is a prompt it doesn't know. Lesson 6, step 1, shows what it writes instead, and the
-   rest of lesson 6 is the experiment of training that mode.
+   the other is a prompt it doesn't know. Lesson 7, step 1, shows what it writes instead, and the
+   rest of lesson 7 is the experiment of training that mode.
 3. On our run most bugs are in the algorithm. Mbpp/17 asks for the perimeter of a square and gets
    `n * (n + 1) * (n + 1) // 2`. Mbpp/11 has the right name and the right loop, then reuses `char`
    as the loop variable, so `char != char` is never true and it returns `''`. The shape is right
@@ -253,6 +253,5 @@ Open the results file to see any answer in full:
 </details>
 
 
-You can score a model now. That's the key to the last experiment in lesson 4:
-[step 10, changing the attention](../04-model/10-attention-experiments.md). Seven changes, one at a
-time, each one scored right here. Or go straight to [lesson 8, export](../08-export/README.md).
+You can score a model now. So let's ask a harder question: what if the model thinks before it
+answers? Next: [lesson 7, the /think span](../07-think-span/README.md).

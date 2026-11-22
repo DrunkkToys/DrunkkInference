@@ -47,8 +47,8 @@ Read it like this:
   their weight on the first token because the softmax has to put it somewhere. QK-norm (step 5)
   keeps the scores small, and the sink mostly goes away. Remember this one, it matters in step 10.
 
-Come back to this table after lesson 6, when the span designs mean something to you. Run it on
-the lesson 6 models with `--think <design>` (or just read mine). Same tool, a different question:
+Come back to this table after lesson 7, when the span designs mean something to you. Run it on
+the lesson 7 models with `--think <design>` (or just read mine). Same tool, a different question:
 does the answer actually read the span?
 
 | model | first | prompt | span | answer |
@@ -63,7 +63,7 @@ didn't lose because the model ignored the neighbour. The model read it, and it h
 often as it misled.
 
 `lat8p`'s 8 latent vectors get 3.7%. That's what `none`'s two empty span markers get. The swap
-test in lesson 6 said the vectors carry nothing. The attention says the same thing from the other
+test in lesson 7 said the vectors carry nothing. The attention says the same thing from the other
 side: the answer barely looks at them. Two tools, one verdict. That's when I start believing it.
 
 ## Which heads do the work?
@@ -136,5 +136,5 @@ uv run pytest tests/test_04_attnlab.py
 
 </details>
 
-Next: [lesson 6, the /think span](../06-think-span/README.md). Step 10 waits until after lesson 7:
-it scores every change on the benchmarks, and lesson 7 is where you build the harness.
+Next: [lesson 6, evaluation](../06-evaluation/README.md). Step 10 waits until after lesson 7:
+it scores every change with lesson 6's harness and lesson 7's method.

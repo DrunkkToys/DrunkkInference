@@ -47,9 +47,9 @@ def extract_code(text: str) -> str:
     """The code inside the answer's ```python block, stripped. A block cut
     off before its closing fence is kept as is. No block: the whole text.
     """
-    # EXERCISE 7.1: lessons/07-evaluation/README.md
+    # EXERCISE 6.1: lessons/06-evaluation/README.md
     # Hint: The compiled pattern _CODE above does the matching: _CODE.search(text).
-    raise NotImplementedError("exercise 7.1: write extract_code")
+    raise NotImplementedError("exercise 6.1: write extract_code")
 
 
 def main() -> None:

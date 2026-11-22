@@ -67,7 +67,7 @@ def apply(model, spec: dict) -> None:
 
 # ---- Looking inside a trained model (lesson 4, step 9) ----
 
-FIT = "none,sig,shared,skeleton,plan,pause16"  # the rows lessons 6 and 4 score
+FIT = "none,sig,shared,skeleton,plan,pause16"  # the rows lessons 7 and 4 score
 
 
 @torch.no_grad()
