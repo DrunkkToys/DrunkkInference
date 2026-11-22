@@ -21,11 +21,17 @@ Return `(cos, sin)`, each of shape `(max_seq_len, head_dim)`.
 
 - There are `head_dim / 2` pairs. Pair *i* turns at speed `1 / rope_theta ** (2i / head_dim)`: from
   1 for the first pair down to almost 1/10,000 for the last.
-  `torch.arange(0, head_dim, 2, dtype=torch.float32) / head_dim` gives the `2i / head_dim` values.
-- At position *p* the angle is *p* × speed. `torch.outer(positions, speeds)` gives every angle at
-  once: shape `(max_seq_len, head_dim / 2)`.
+- At position *p* the angle is *p* × speed. One angle per (position, pair).
 - Both halves of each row hold the same angles, because in step 4b dimension *i* is paired with
-  dimension *i* + `head_dim / 2`. `torch.cat([angles, angles], -1)`, then `.cos()` and `.sin()`.
+  dimension *i* + `head_dim / 2`.
+
+<details><summary>Hint: the PyTorch calls</summary>
+
+- `torch.arange(0, head_dim, 2, dtype=torch.float32) / head_dim` gives the `2i / head_dim` values.
+- `torch.outer(positions, speeds)` gives every angle at once: shape `(max_seq_len, head_dim / 2)`.
+- `torch.cat([angles, angles], -1)`, then `.cos()` and `.sin()`.
+
+</details>
 
 <details><summary>Solution</summary>
 
@@ -41,8 +47,15 @@ def rope_tables(cfg):
 ## Exercise 4.4b: `rotate`
 
 Rotating a 2D point `(a, b)` by angle θ gives `(a cos θ − b sin θ, b cos θ + a sin θ)`. Do that
-for every pair at once: split `x` into halves `x1 = x[..., :half]` and `x2 = x[..., half:]`, build
-`[-x2, x1]` with `torch.cat(..., -1)`, and return `x * cos + that * sin`.
+for every pair at once, with no loop. Pair *i* is dimension *i* and dimension *i* + half. Look at
+the formula: what do you have to multiply by `sin` to get both lines right?
+
+<details><summary>Hint</summary>
+
+Split `x` into halves `x1 = x[..., :half]` and `x2 = x[..., half:]`, build `[-x2, x1]` with
+`torch.cat(..., -1)`, and return `x * cos + that * sin`.
+
+</details>
 
 This pairing (*i* with *i* + half) is called the **NEOX** layout. Pairing *i* with *i* + 1 also
 exists, and llama.cpp has to be told which one, so lesson 8 relies on this being NEOX, which is

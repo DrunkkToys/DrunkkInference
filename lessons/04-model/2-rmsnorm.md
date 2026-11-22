@@ -18,9 +18,17 @@ rescales.
 
 In `theog/model.py`. One line. `x` has shape (..., dim); the result has the same shape.
 
+The formula above is the whole job. The one trap: you get one RMS per vector, and it has to divide
+every number of *its own* vector, not the whole tensor. Think about the shape of that RMS before
+you write anything.
+
+<details><summary>Hint</summary>
+
 - `x.pow(2).mean(-1, keepdim=True)` gives the mean square per vector, shape (..., 1). `keepdim`
   keeps that last axis so it divides every position of its own vector.
 - `torch.rsqrt(t)` is `1 / sqrt(t)`.
+
+</details>
 
 ```bash
 uv run pytest tests/test_04_model.py -k step2

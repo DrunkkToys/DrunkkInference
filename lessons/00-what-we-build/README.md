@@ -9,6 +9,9 @@ loop, the data filters, the label shift, attention, RoPE, the training loss, the
 evaluation harness and the export. The repo gives you the plumbing (argument parsing, file
 formats, downloads) and a test for every function you write.
 
+**You learn:** what the course builds, what your laptop model will and won't do, and how an
+exercise works. **Time:** 15 minutes, plus the setup.
+
 ## Two tracks
 
 | | laptop track | full track |
@@ -106,9 +109,15 @@ def merge(ids: list[int], pair: tuple[int, int], new_id: int) -> list[int]:
 ```
 
 Replace the `raise` with your code, then run the test the lesson gives you. Red means not yet;
-green means done. Each lesson also has the answer in a folded **Solution** block. Try first. Reading
-the answer before you have been stuck for a while teaches you about as much as reading this
-sentence did.
+green means done. When an exercise needs a specific library call, the lesson folds it into a
+**Hint** block, and the answer into a **Solution** block. Try first. Reading the answer before you
+have been stuck for a while teaches you about as much as reading this sentence did.
+
+## The PyTorch you need
+
+New to PyTorch? Fine. You need about a dozen operations, and [the PyTorch you need](pytorch.md)
+covers them in 15 minutes, with output to check against. Read it before lesson 4, or right now if
+the word "tensor" makes you nervous.
 
 ## When you're stuck
 

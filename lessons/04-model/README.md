@@ -2,8 +2,12 @@
 
 **You write:** the transformer. RMSNorm, attention by hand, RoPE, multi-head attention with
 QK-norm, the SwiGLU MLP, the block, and the forward pass of the whole model: 8 functions, most of
-them 2 to 5 lines. **You get:** `theog/model.py`, which lesson 5 trains. **Time:** two to three hours.
-This is the longest lesson, and the one people remember.
+them 2 to 5 lines. **You get:** `theog/model.py`, which lesson 5 trains. **You learn:** what every
+piece of a transformer computes, and why it's there. **Time:** about three hours, more if PyTorch
+is new to you. This is the longest lesson, and the one people remember.
+
+New to PyTorch? Read [the PyTorch you need](../00-what-we-build/pytorch.md) first. Fifteen
+minutes, and every operation in this lesson is on it.
 
 theOG is a **decoder-only transformer**, the same family as GPT and Qwen. The whole model is
 `theog/model.py`, about 150 lines. The class skeletons (which layers exist, their sizes) are
@@ -51,6 +55,9 @@ Every snippet uses the `tiny()` size (hidden 64, 2 layers, 2 heads of 32, vocabu
 runs instantly on a CPU. The laptop and theOG-50M sizes are the same code with bigger numbers. Run
 a snippet from the repo root by pasting it into `uv run python`. Each step prints the output you
 should get. If yours differs, your function differs.
+
+Each exercise gives the idea first and folds the exact PyTorch calls into a **Hint**. Try without
+it. The calls are easy to look up; knowing which ones you need is the part that sticks.
 
 Do the steps in order. Each test only uses the steps before it.
 

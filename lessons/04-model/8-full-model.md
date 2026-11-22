@@ -64,6 +64,9 @@ the first step, so the untrained model would be confidently wrong instead of eve
 
 ## Run it
 
+Before you run it, predict: an untrained model, 512 possible tokens. What probability should it
+give its favourite next token? Write a number down.
+
 ```python
 import torch
 from theog.model import TheOG, tiny
