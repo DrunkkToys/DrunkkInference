@@ -1,4 +1,4 @@
-"""Lesson 6: what a think design costs the model, in nats per row.
+"""Lesson 7: what a think design costs the model, in nats per row.
 
   uv run python -m theog.cost --ckpt runs/think-sig/final.pt --tokenizer data/tokenizer.json --think sig
 
@@ -25,7 +25,7 @@ from theog.format import sequence
 from theog.pack import split_of
 from theog.think import DESIGNS, build, span_answer
 
-LESSON_DESIGNS = "none,sig,shared,skeleton,plan"  # the rows lesson 6 scores
+LESSON_DESIGNS = "none,sig,shared,skeleton,plan"  # the rows lesson 7 scores
 from theog.tokens import ANSWER, IGNORE
 from theog.train import load_model, pick_device
 
@@ -39,10 +39,10 @@ def nats(model, ids: list[int], labels: list[int]) -> tuple[float, float]:
     the one holding <|Answer|> predict the span (and its closing tokens); that
     position and every later one predict the answer.
     """
-    # EXERCISE 6.2: lessons/06-think-span/README.md
+    # EXERCISE 7.2: lessons/07-think-span/README.md
     # Hint: lp = torch.log_softmax(model(torch.tensor([ids], device=...))[0].float(), -1);
     #       a = ids.index(ANSWER); position i costs -lp[i, labels[i]].
-    raise NotImplementedError("exercise 6.2: write nats")
+    raise NotImplementedError("exercise 7.2: write nats")
 
 
 def rows_for(tok: Tokenizer, rows: Path, fit: list[str], n: int, seq_len: int) -> list[dict]:
@@ -66,7 +66,7 @@ def main() -> None:
     ap.add_argument("--rows", type=Path, default=Path("data/rows.clean.jsonl"))
     ap.add_argument("--think", choices=DESIGNS, required=True, help="the design the model was trained with")
     ap.add_argument("--fit", default=LESSON_DESIGNS,
-                    help="designs every scored row must fit in (keep the default to compare with lesson 6)")
+                    help="designs every scored row must fit in (keep the default to compare with lesson 7)")
     ap.add_argument("--n", type=int, default=1000)
     ap.add_argument("--swap", action="store_true",
                     help="lat8/lat8p: give each row the vectors written for the next row's prompt")

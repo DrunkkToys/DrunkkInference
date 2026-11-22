@@ -1,7 +1,7 @@
 # Step 10: changing the attention
 
 **Come back here after lesson 7.** Every change is scored on HumanEval and MBPP, so you need
-lesson 7's harness, and the method is lesson 6's. Each run is a full training, about 2½ hours on a
+lesson 6's harness, and the method is lesson 7's. Each run is a full training, about 2½ hours on a
 laptop.
 
 Every new model paper changes the attention. Fewer key/value heads. More heads. A gate. A bigger
@@ -9,7 +9,7 @@ RoPE base. Each comes with a chart that goes up and to the right, measured on a 
 bigger than yours.
 
 Does any of it help at 8M parameters? I don't know. Neither do you. Neither does the paper. So we
-do what lesson 6 taught us: write the prediction down first, change **one** thing, train with the
+do what lesson 7 taught us: write the prediction down first, change **one** thing, train with the
 same data, seed and recipe, and let the log decide.
 
 ## The tool
@@ -34,10 +34,10 @@ uv run python -m theog.train --packed data/packed --out runs/attn_kv2 --preset l
   --seed 42 --attn kv=2
 ```
 
-Then score it like any lesson 6 design: `theog.cost` on the same 1,000 rows, HumanEval and MBPP in
+Then score it like any lesson 7 design: `theog.cost` on the same 1,000 rows, HumanEval and MBPP in
 no-think mode, and the two step 9 diagnostics. The baseline is the lesson 5 model: cost 38.5 nats
 per row, HumanEval 8/164, MBPP 49/500. Seed noise on the cost is 0.7 nats. On the benchmarks it's
-much worse: the same model with seed 7 scores 3 and 58 (lesson 6, the seed check). So a benchmark gap
+much worse: the same model with seed 7 scores 3 and 58 (lesson 7, the seed check). So a benchmark gap
 under 5 HumanEval or 9 MBPP tasks is a tie too.
 
 The scoring, for `kv2`. The checkpoint remembers its `--attn`, so every tool loads the changed model
@@ -85,7 +85,7 @@ tie with fewer parameters (`kv2`, `kv1`) is a practical win: same model, cheaper
 research one.
 
 Look at that table. Three ties, three losses, one maybe. Am I that pessimistic? No. At this size
-almost every clever idea has been a tie or worse. Lesson 6 went seven for seven against my
+almost every clever idea has been a tie or worse. Lesson 7 went seven for seven against my
 arguments. If one of these surprises me, good. That's the run worth having.
 
 ## The results
@@ -102,7 +102,7 @@ arguments. If one of these surprises me, good. That's the run worth having.
 | `noqk` | | | | not run yet |
 
 So the gate is the first change in this course to beat the baseline on cost. By the rule I wrote
-above, that's a success. At one seed. Remember what lesson 6's seed check did to `psr`'s MBPP lead?
+above, that's a success. At one seed. Remember what lesson 7's seed check did to `psr`'s MBPP lead?
 It flipped. The gate gets a second seed before I call it anything.
 
 The predictions above were committed before the first run started. Git has the date. When the

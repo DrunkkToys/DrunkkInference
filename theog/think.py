@@ -1,11 +1,11 @@
-"""Lesson 6: what goes inside the think span, <|Think|> ... <|/Think|>.
+"""Lesson 7: what goes inside the think span, <|Think|> ... <|/Think|>.
 
 Every design is a fixed rule (row) -> text, computed from the prompt and the
 code of a training row. No model writes it. Pack with one design:
 
   uv run python -m theog.pack ... --think sig
 
-and lesson 6 compares them with theog.cost.
+and lesson 7 compares them with theog.cost.
 
   none      empty span (theOG's own design)
   sig       the code's def line(s): commit to the signature first
@@ -61,10 +61,10 @@ def grounded(t: tokenize.TokenInfo, prompt: str, words: set[str]) -> bool:
 
     `words` is the set of the prompt's words, set(_WORD.findall(prompt)).
     """
-    # EXERCISE 6.1: lessons/06-think-span/README.md
+    # EXERCISE 7.1: lessons/07-think-span/README.md
     # Hint: three ifs on t.type (tokenize.NAME, tokenize.NUMBER, tokenize.STRING);
     #       keyword.iskeyword(t.string) for the first; everything else is False.
-    raise NotImplementedError("exercise 6.1: write grounded")
+    raise NotImplementedError("exercise 7.1: write grounded")
 
 
 def shared(row: dict) -> str:

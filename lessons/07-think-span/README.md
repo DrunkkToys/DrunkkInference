@@ -1,23 +1,22 @@
-# Lesson 6: the /think span, an experiment
+# Lesson 7: the /think span, an experiment
 
-**You write:** `grounded` in `theog/think.py` (exercise 6.1) and `nats` in `theog/cost.py`
-(exercise 6.2). **Then you run:** an experiment that asks what to write inside the think span, and
+**You write:** `grounded` in `theog/think.py` (exercise 7.1) and `nats` in `theog/cost.py`
+(exercise 7.2). **Then you run:** an experiment that asks what to write inside the think span, and
 how to tell if it helps. **Time:** about 30 minutes for the code.
 
-The exercises and their tests are all you need for lesson 7. Every run below is optional: the
+The exercises and their tests are all you need to move on. Every run below is optional: the
 lesson gives its results, so you can read it straight through. If you do run them:
 
 | step | what it needs | time on an M2 |
 |---|---|---|
-| 1 | your lesson 5 model | a minute (the benchmark score needs lesson 7) |
+| 1 | your lesson 5 model | a minute |
 | 3 | a 3-epoch run with the plan | about 2½ hours |
 | 4 | your lesson 5 model and the step 3 model | a few minutes |
 | 5 | one half-epoch run per design | about 25 minutes each |
 | 6 | one 3-epoch run and two half-epoch runs | about 2½ hours, plus 25 minutes each |
 | 7 | one 3-epoch run per design | 2½ to 4 hours each (`lat8p` about 6) |
 
-Commands that run `theog.evaluate` need lesson 7's `extract_code` and `run_tests`. Come back to
-them after lesson 7. The experiment scores `final.pt`, the weights after the last step, so every
+Every score here comes from the lesson 6 harness. The experiment scores `final.pt`, the weights after the last step, so every
 design is measured at the same budget. For the lesson 5 run that is the same model as `best.pt`.
 
 This lesson is a real experiment, written up in the order it happened, wrong predictions included.
@@ -63,7 +62,7 @@ uv run python -m theog.generate --ckpt runs/laptop/final.pt --tokenizer data/tok
 ````
 
 In `/no_think` the same model wrote a correct `is_palindrome` (lesson 5). Here it closes the span,
-as it should, and then loses the thread. After lesson 7, score it on HumanEval in `/think` mode:
+as it should, and then loses the thread. Score it on HumanEval in `/think` mode:
 
 ```bash
 uv run python -m theog.evaluate --ckpt runs/laptop/final.pt --tokenizer data/tokenizer.json \
@@ -114,7 +113,7 @@ code     def count_char_freq(s):
 already contains it. Grounded tokens can be copied; everything else the model has to invent. That's
 the first exercise.
 
-### Exercise 6.1: `grounded` in `theog/think.py`
+### Exercise 7.1: `grounded` in `theog/think.py`
 
 `grounded(t, prompt, words)` takes one Python token of the code (from the standard `tokenize`
 module) and returns True when the prompt already contains it:
@@ -129,7 +128,7 @@ Everything else, operators included, is False. `words` is the set of the prompt'
 computed for you.
 
 ```bash
-uv run pytest tests/test_06_think.py -k grounded
+uv run pytest tests/test_07_think.py -k grounded
 ```
 
 <details><summary>Solution</summary>
@@ -150,7 +149,7 @@ def grounded(t, prompt, words):
 Then all the design tests pass:
 
 ```bash
-uv run pytest tests/test_06_think.py -k "design or plan or think_text"
+uv run pytest tests/test_07_think.py -k "design or plan or think_text"
 ```
 
 ## Step 3: the first try, the plan
@@ -165,7 +164,7 @@ uv run python -m theog.train --packed data/packed_plan --out runs/think-plan --p
     --batch-size 16 --accum 1 --lr 1e-3 --eval-every 1000 --eval-windows 200 --log-every 500
 ```
 
-`--seq-len 512` matches the laptop model, as in lesson 5. The scores, after lesson 7:
+`--seq-len 512` matches the laptop model, as in lesson 5. The scores:
 
 ```bash
 uv run python -m theog.evaluate --ckpt runs/think-plan/final.pt --tokenizer data/tokenizer.json \
@@ -209,7 +208,7 @@ You can't use the training loss for this: `train.py` reports the loss **per toke
 adds a different number of tokens. A long span full of easy tokens lowers the average and raises the
 total.
 
-### Exercise 6.2: `nats` in `theog/cost.py`
+### Exercise 7.2: `nats` in `theog/cost.py`
 
 `nats(model, ids, labels)` runs the model on one training sequence and returns two numbers: the
 nats spent on the span and the nats spent on the answer. At each position i whose label isn't
@@ -218,7 +217,7 @@ nats spent on the span and the nats spent on the answer. At each position i whos
 predict the answer.
 
 ```bash
-uv run pytest tests/test_06_think.py -k "nats or costs"
+uv run pytest tests/test_07_think.py -k "nats or costs"
 ```
 
 <details><summary>Solution</summary>
@@ -281,7 +280,7 @@ uv run python -m theog.evaluate --ckpt runs/screen/sig/final.pt --tokenizer data
     --think --dataset mbpp500 --limit 100 --out runs/screen/sig_mbpp
 ```
 
-(For `none`, pack and evaluate without `--think`. The last command needs lesson 7.)
+(For `none`, pack and evaluate without `--think`.)
 
 What we got:
 
@@ -295,7 +294,7 @@ What we got:
 
 **`sig` is the only design cheaper than the empty span**, by 1.9 nats per row, 2%. Every other
 design costs more in total than it saves on the answer. On MBPP all five land between 1 and 5 of
-100: at this budget that's noise (lesson 7, question 4), so the cost column is the result.
+100: at this budget that's noise (lesson 6, question 4), so the cost column is the result.
 
 `plan` is the interesting loser. Once its span is written, the answer is by far the cheapest (61
 nats against 94), and it passes the most MBPP tasks of the five. But the span costs 42, more than it
@@ -428,7 +427,7 @@ None of them beats the empty span on cost. `pause4`, `c2f1`, `psig` and `retr` l
   only with `pause4`, and the code is identical on 2 of 164 and 13 of 500. We looked for a pattern
   (task length, nesting, loops in the reference solution) and found none: near-twins like the volume
   of a cube and of a cuboid fall on opposite sides. Two runs of the same size land on different
-  tasks; that's the noise lesson 7 warns about, seen task by task.
+  tasks; that's the noise lesson 6 warns about, seen task by task.
 - **`c2f1` reorders the work and saves nothing.** The outline costs 25.6 nats and the fills 13.5:
   writing the code in a different order costs about the same as writing it top to bottom.
 - **`psig` is the only design ahead on one benchmark and level on the other**: +4 tasks on MBPP,
@@ -603,8 +602,10 @@ text in it beats that at 50M is the experiment this lesson's tools let you run.
    design that loses at half an epoch can win at 3 if its span cost falls faster than `none`'s
    answer cost, and a winner can lose. To believe a win you need the full-cost table at 3 epochs, on
    the same rows, at more than one seed, and a benchmark difference of several tasks in the same
-   direction (lesson 7, question 4). Step 6 ran the 3-epoch check for `sig`: it lost.
+   direction (lesson 6, question 4). Step 6 ran the 3-epoch check for `sig`: it lost.
 
 </details>
 
-Next: [lesson 7, evaluation](../07-evaluation/README.md).
+You know how to test an idea now. Lesson 4 has one more for you:
+[step 10, changing the attention](../04-model/10-attention-experiments.md). Seven changes, one at a
+time, scored the same way. Or go straight to [lesson 8, export](../08-export/README.md).

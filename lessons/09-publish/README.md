@@ -32,8 +32,8 @@ Sampling: temperature 0.2, top-k 40, no repeat penalty (set by the `params` file
 
 | benchmark | passed | file | mode | temperature |
 |---|:-:|---|---|:-:|
-| HumanEval | <x>/164 | <results file from lesson 7> | /no_think | <t> |
-| MBPP-500  | <y>/500 | <results file from lesson 7> | /no_think | <t> |
+| HumanEval | <x>/164 | <results file from lesson 6> | /no_think | <t> |
+| MBPP-500  | <y>/500 | <results file from lesson 6> | /no_think | <t> |
 
 Harness: `theog.evaluate`, which passes 164/164 and 498/500 reference solutions.
 
@@ -50,7 +50,7 @@ Final validation loss <loss>.
 
 ## Limits
 
-<what you saw in lesson 7: what it gets wrong>
+<what you saw in lesson 6: what it gets wrong>
 
 ## Files
 
@@ -59,7 +59,7 @@ Final validation loss <loss>.
 | <name>-Q8_0.gguf | <the hash the export printed> |
 ```
 
-The **Limits** section is the one people skip, and the one readers trust most. Read your lesson 7
+The **Limits** section is the one people skip, and the one readers trust most. Read your lesson 6
 failures and say plainly what the model can't do.
 
 ## 2. Ollama from Hugging Face
@@ -119,12 +119,12 @@ Name both in your card, with links. If you add sources, check each licence befor
 ## Where to go from here
 
 You've built the whole pipeline once. Everything that makes a model better is a change to one of
-its steps, measured in lesson 7:
+its steps, measured in lesson 6:
 
 - **More data** (lesson 2): the full track, or more sources. theOG used 12.
 - **A bigger model** (lesson 4): the full track is 50M. Every size you try costs a training run.
 - **Better data** (lesson 2): a new cleaning rule, a tighter skeleton cap.
-- **The think span** (lesson 6): a design of your own, scored by its total cost in nats, or `psr`
+- **The think span** (lesson 7): a design of your own, scored by its total cost in nats, or `psr`
   at a third seed. Two seeds said HumanEval, the MBPP bar said no. Who's right?
 - **The attention** (lesson 4, step 10): the four changes the table hasn't run yet, or the gate at a
   second seed. One seed is an anecdote.

@@ -1,4 +1,4 @@
-"""Lesson 7: score a model on HumanEval (164 tasks) and MBPP-500.
+"""Lesson 6: score a model on HumanEval (164 tasks) and MBPP-500.
 
   uv run python -m theog.evaluate --ckpt runs/theog-50m/best.pt --tokenizer data/tokenizer.json \
       --dataset humaneval --out results/
@@ -86,10 +86,10 @@ def run_tests(solution: str, entry: str, tests: list[str], setup: str = "", time
     (False, f"timeout ({timeout}s)"). The runner prints __RESULT__{json};
     no such line means (False, "crashed: <last stderr line>").
     """
-    # EXERCISE 7.2: lessons/07-evaluation/README.md
+    # EXERCISE 6.2: lessons/06-evaluation/README.md
     # Hint: subprocess.run([sys.executable, '-I', '-c', _RUNNER], input=job,
     #       capture_output=True, text=True, timeout=timeout).
-    raise NotImplementedError("exercise 7.2: write run_tests")
+    raise NotImplementedError("exercise 6.2: write run_tests")
 
 
 def prefilled(model, tok, task, prefill, think, temperature, top_k, max_new):
@@ -191,7 +191,7 @@ def main() -> None:
     ap.add_argument("--dataset", choices=["humaneval", "mbpp500"], required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--think", action="store_true")
-    ap.add_argument("--design", help="lesson 6 design the model was trained with: prefills a prompt-only span "
+    ap.add_argument("--design", help="lesson 7 design the model was trained with: prefills a prompt-only span "
                     "(psig) and rebuilds coarse-to-fine code (c2f0, c2f1, psig_c2f1); implies --think")
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--top-k", type=int, default=40)

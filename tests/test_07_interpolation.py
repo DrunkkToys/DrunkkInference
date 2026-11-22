@@ -1,4 +1,4 @@
-"""Lesson 6, part 2: the interpolation designs (pause, c2f, psig, retr, lat8, lat8p)."""
+"""Lesson 7, part 2: the interpolation designs (pause, c2f, psig, retr, lat8, lat8p)."""
 from dataclasses import replace
 
 import torch

@@ -25,9 +25,9 @@ def reverse(s):
 <|/Answer|><|end|>
 ```
 
-- `<|User|> … <|/User|>` is the task. It ends with a mode, `/no_think` or `/think` (lesson 6).
+- `<|User|> … <|/User|>` is the task. It ends with a mode, `/no_think` or `/think` (lesson 7).
 - `<|Assistant|>` means "the model speaks now".
-- `<|Think|><|/Think|>` is the think span, empty here (lesson 6).
+- `<|Think|><|/Think|>` is the think span, empty here (lesson 7).
 - `<|Answer|> … <|/Answer|>` is the code, inside a ```` ```python ```` block.
 - `<|end|>` ends the conversation. When generating, the model stops at `<|/Answer|>`.
 
@@ -192,7 +192,7 @@ uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokeni
 About 20 seconds. 22 million training tokens. 5,665 rows were longer than 512 tokens and were
 dropped, about 6%.
 
-`theog.pack` has one more flag, `--think`, which fills every row's think span with one of lesson 6's
+`theog.pack` has one more flag, `--think`, which fills every row's think span with one of lesson 7's
 designs. Leave it at its default, `none`: lesson 5 trains on the empty span.
 
 Now look at what you made. Decode the first window:

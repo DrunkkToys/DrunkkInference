@@ -96,7 +96,7 @@ last line is `num_ctx`, the model's context, which the export passes in. End wit
 
 Without the `PARAMETER` lines Ollama uses its own defaults (temperature 0.8, a repeat penalty), and
 your model would behave differently from `theog.generate` in lesson 5, which samples at temperature
-0.2 and top-k 40 like these lines. Lesson 7 scores greedy (temperature 0), so to reproduce a lesson 7
+0.2 and top-k 40 like these lines. Lesson 6 scores greedy (temperature 0), so to reproduce a lesson 6
 answer in Ollama, pass temperature 0, as step 3 below does.
 
 ```bash
@@ -203,7 +203,7 @@ exported file. The course model never had them, so for you `tensors()` covers ev
 3. LM Studio uses the Jinja `CHAT_TEMPLATE` from the file, so a message ending in `/think` opens
    the span. If it shows control tokens, you should see `<|/Think|>` at the start of the reply: the
    model closing the span itself. A model trained only on `/no_think` rows follows it with
-   `<|Answer|>` only about one time in three (lesson 6, step 1).
+   `<|Answer|>` only about one time in three (lesson 7, step 1).
 
 </details>
 
