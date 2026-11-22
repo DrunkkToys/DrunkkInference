@@ -385,6 +385,9 @@ Then answer three questions in your prediction file, under what you wrote before
 2. Does your HumanEval gain pass the paired test? Does your MBPP one?
 3. By your own rule, written before the run, is `psr` better? Not by the rule you'd like now.
 
+Want to know if your win is real? Train `psr` again with `--seed 7` and a new `--out`, and run the
+paired test once more. That's how ours got its second row.
+
 ## What we conclude
 
 No span beats the empty span on cost on this model: not text built from the code (steps 3 to 6),
@@ -435,20 +438,28 @@ text in it beats that at 50M is the experiment this lesson's tools let you run.
 
 ## Do you want to fail or underperform?
 
-Most people stop after their `psr` run, and that's fine: you've done a real experiment, end to end.
-This part is for the few who want to see how we got there. Every run below is one we made, most of
-them losers, each with its prediction, commands and result in [the lab notebook](lab-notebook.md).
-Want to fail? Pick a loser and find out why it loses. Want to underperform? Try to beat `psr`.
+Every variation we discarded on the way to `psr` is here, so you can run it yourself. Pick one and
+it will do one of two things: fail, worse than the empty span, or underperform, a tie that costs you
+3 hours to find out. That's the point. Knowing why a reasonable idea loses is worth more than one more
+row in a table, and you only really know it once you've watched it lose on your own machine.
 
-| run | what it teaches | time on an M2 | where |
-|---|---|---|---|
-| `plan` at 3 epochs | a span the model writes costs more than it saves | about 2½ hours | below |
-| the screen: five designs, half an epoch each | a cheap screen kills big losers and can't rank close ones | about 25 minutes each | [step 5](lab-notebook.md#step-5-the-screen) |
-| `sig` at 3 epochs, and the screen at seed 7 | the screen's winner losing at full budget | about 2½ hours, plus 25 minutes each | [step 6](lab-notebook.md#step-6-check-the-winner) |
-| `pause4`, `c2f1`, `psig`, `retr`, `lat8` | spans the model doesn't pay for, and why each still loses | 2½ to 4 hours each | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
-| `psr` again with `--seed 7` | whether your win survives a second seed | about 3½ hours | [your experiment](#your-experiment-psr)'s commands, with `--seed 7` and a new `--out` on `theog.train` |
-| your own span | Going further, question 3 | depends | below |
-| seven changes to the attention | the same method on the model itself | about 2½ hours each | [lesson 4, step 10](../04-model/10-attention-experiments.md) |
+Most people will skip this, and that's fine. Each run has its prediction, its commands and its
+result in [the lab notebook](lab-notebook.md).
+
+| variation | the idea | what it did | time on an M2 | where |
+|---|---|---|---|---|
+| `plan` | write a plan of the code first | **fail**: 53.5 nats, HumanEval 1, MBPP 34 | about 2½ hours | below |
+| `shared`, `skeleton` | write the tokens the prompt already has, then the control flow | **fail** at the screen | about 25 minutes each | [step 5](lab-notebook.md#step-5-the-screen) |
+| `sig` | write the signature first | won the screen, then **fail** at 3 epochs: 41.7, 2, 53 | about 2½ hours | [step 6](lab-notebook.md#step-6-check-the-winner) |
+| `c2f1` | the outline, then the fills | **fail**: 39.1, 2, 47 | about 2½ hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+| `lat8` | 8 vectors instead of words | **fail**: 94.4, 0, 0 | about 3 hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+| `pause4` | four fixed tokens to compute in | **underperform**: 38.7, 8, 49, a tie | about 3 hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+| `psig` | the signature, for free | **underperform**: 38.9, 8, 53, a tie | about 3 hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+| `retr` | a neighbour's code, for free | **underperform**: 38.8, 12, 46, a tie | about 3½ hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+
+`none` is 38.5 nats, HumanEval 8, MBPP 49. `psig` and `retr` are the two halves of `psr`: neither
+won alone. The same treatment for the attention, seven changes to the model itself, is
+[lesson 4, step 10](../04-model/10-attention-experiments.md).
 
 The `plan` run from step 3:
 
