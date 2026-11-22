@@ -127,7 +127,7 @@ its steps, measured in lesson 6:
 - **Better data** (lesson 2): a new cleaning rule, a tighter skeleton cap.
 - **The think span** (lesson 7): a design of your own, scored by its total cost in nats, or `psr`
   at a third seed. Two seeds said HumanEval, the MBPP bar said no. Who's right?
-- **The attention** (lesson 4, step 10): the four changes the table hasn't run yet, or the gate at a
+- **The attention** (lesson 4, step 10): the three changes I never ran, or the gate at a
   second seed. One seed is an anecdote.
 
 Change one thing at a time, and score both benchmarks every time. That's the whole method.
