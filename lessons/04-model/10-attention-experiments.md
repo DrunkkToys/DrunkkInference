@@ -34,8 +34,9 @@ uv run python -m theog.train --packed data/packed --out runs/attn_kv2 --preset l
 
 Then score it like any lesson 6 design: `theog.cost` on the same 1,000 rows, HumanEval and MBPP in
 no-think mode, and the two step 9 diagnostics. The baseline is the lesson 5 model: cost 38.5 nats
-per row, HumanEval 8/164, MBPP 49/500. Seed noise on the cost is 0.7 nats. Anything inside that is
-a tie.
+per row, HumanEval 8/164, MBPP 49/500. Seed noise on the cost is 0.7 nats. On the benchmarks it's
+much worse: the same model with seed 7 scores 3 and 58 (lesson 6, the seed check). So a benchmark gap
+under 5 HumanEval or 9 MBPP tasks is a tie too.
 
 ## Why GQA saves anything
 
@@ -77,8 +78,8 @@ arguments. If one of these surprises me, good. That's the run worth having.
 | run | cost | HumanEval | MBPP | verdict |
 |---|:-:|:-:|:-:|---|
 | `none` (lesson 5) | 38.5 | 8 | 49 | the baseline |
-| `kv2` | | | | queued |
-| `h8x32` | | | | queued |
+| `kv2` | 38.6 | 3 | 48 | a tie, 4.7% fewer parameters. My HumanEval range (6–10) was wrong; 3 is what `none` scores at seed 7 |
+| `h8x32` | | | | running |
 | `gate` | | | | queued |
 | `kv1` | | | | queued |
 | `h2x128` | | | | queued |
