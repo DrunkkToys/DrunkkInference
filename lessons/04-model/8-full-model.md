@@ -59,7 +59,7 @@ def forward(self, ids):
 
 </details>
 
-The small starting table (`std=0.02`, step 1) matters here too. (`std=0.02`, step 1). Large rows would give large logits from
+The small starting table (`std=0.02`, step 1) matters here too. Large rows would give large logits from
 the first step, so the untrained model would be confidently wrong instead of evenly unsure.
 
 ## Run it
@@ -115,9 +115,13 @@ uv run python -m theog.model
 
 ```text
 theOG-50M: 50,148,352 parameters
+  embed.weight                 (16000, 512)
+  blocks.0.attn_norm.weight    (512,)
+  ...
 ```
 
-The same total as theOG-50M v3's published count.
+The first line is the one to check. Then every weight of block 0 with its shape: compare them with
+steps 2 to 7. The same total as theOG-50M v3's published count.
 
 The laptop preset (`laptop()` in the same file) is the same layout, smaller:
 
