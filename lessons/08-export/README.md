@@ -1,12 +1,17 @@
 # Lesson 8: export to GGUF and Ollama
 
 **You write:** the mapping from your weight names to llama.cpp's, and the Ollama Modelfile.
-**You get:** a `.gguf` file and `ollama run` on your own model, no Python needed. **Time:** about
-30 minutes, plus installing [Ollama](https://ollama.com).
+**You get:** a `.gguf` file and `ollama run` on your own model, no Python needed. **You learn:**
+what a model file really contains, and how to prove the exported model is the one you trained.
+**Time:** about 30 minutes, plus installing [Ollama](https://ollama.com).
 
-A `.pt` checkpoint needs PyTorch and this repo. A **GGUF** file holds everything a runtime needs in
-one file: the weights, the tokenizer, the chat template and the model's shape. llama.cpp, Ollama and
-LM Studio load it directly, on a laptop, with no Python.
+Right now your model lives in a `.pt` file that needs PyTorch, this repo and you to explain it.
+Nobody is going to clone a repo to try your model. They'll type `ollama run` and give it ten
+seconds.
+
+A **GGUF** file holds everything a runtime needs in one file: the weights, the tokenizer, the chat
+template and the model's shape. llama.cpp, Ollama and LM Studio load it directly, on a laptop, with
+no Python.
 
 ## What goes into the file: `theog/export.py`
 
@@ -43,7 +48,8 @@ Return every weight as `(gguf_name, float32 numpy array)`, in this order:
 3. `output_norm.weight`: your final `norm.weight`.
 
 Then `assert len(out) == len(model.state_dict())`. A weight with no slot would otherwise be silently
-left out of the file, and you'd find out from a model that writes nonsense, with no error.
+left out of the file, and you'd find out from a model that writes nonsense, with no error. Silent
+bugs are the worst kind. This one line turns it into a loud one.
 
 ```bash
 uv run pytest tests/test_08_export.py -k tensor_names
@@ -119,6 +125,9 @@ def modelfile(gguf_path, mode="no_think", num_ctx=2048):
 
 ## Run it
 
+Before you run it, guess the size of the Q8_0 file. You know the parameter count (lesson 4) and the
+bits per weight (above). Write the number down.
+
 ```bash
 uv run --extra export python -m theog.export --ckpt runs/laptop/best.pt \
     --tokenizer data/tokenizer.json --out release/laptop-Q8_0.gguf --quant Q8_0
@@ -130,7 +139,8 @@ release/Modelfile.no_think  ->  ollama create theog:no_think -f release/Modelfil
 release/Modelfile.think  ->  ollama create theog:think -f release/Modelfile.think
 ```
 
-A few seconds. A 9.1 MB file: that's your whole model. (Your hash will differ; it's the hash of
+A few seconds. A 9.1 MB file: that's your whole model. Smaller than most hero images on a
+landing page. (Your hash will differ; it's the hash of
 your weights.) The export passes the model's own context to `modelfile` as `num_ctx`, 512
 here, so Ollama never feeds it a window longer than it trained on.
 
@@ -162,8 +172,8 @@ No Python, no repo: this runs anywhere Ollama runs. Delete it with `ollama rm my
 
 ## Check that the GGUF is the same model
 
-An export can be wrong without any error: a swapped tensor, or a tokenizer that splits text
-differently. Before you trust it, check three things (with llama.cpp's `llama-server`, or
+"It runs" is not "it's the same model". An export can be wrong without any error: a swapped
+tensor, or a tokenizer that splits text differently. Before you trust it, check three things (with llama.cpp's `llama-server`, or
 Ollama's API):
 
 1. **Tokens.** `/tokenize` on a prompt gives the same ids as `tok.encode()`.
@@ -186,8 +196,8 @@ exported file. The course model never had them, so for you `tensors()` covers ev
 
 1. Export with `--quant F16` too. Compare the sizes. Where does the rest of the Q8_0 file go, if the
    weights are about half?
-2. Swap two entries in `PER_BLOCK` (say `attn_q` and `attn_k`) and export. Does anything complain?
-   What does `ollama run` write?
+2. Swap two entries in `PER_BLOCK` (say `attn_q` and `attn_k`) and export. Before you run it:
+   will anything complain? What will `ollama run` write? Then check.
 3. Load the GGUF in LM Studio and send a message ending in `/think`. What do you see?
 
 <details><summary>Answers</summary>
@@ -206,5 +216,8 @@ exported file. The course model never had them, so for you `tensors()` covers ev
    `<|Answer|>` only about one time in three (lesson 7, step 1).
 
 </details>
+
+Your model runs anywhere now. The last step is the one most people skip: telling the truth about
+it.
 
 Next: [lesson 9, publishing](../09-publish/README.md).

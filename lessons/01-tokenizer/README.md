@@ -2,11 +2,15 @@
 
 **You write:** byte-pair encoding by hand in pure Python, then the real tokenizer with the
 `tokenizers` library. **You get:** `data/tokenizer.json`, which every later lesson uses.
-**Time:** about an hour.
+**You learn:** how text becomes the integers a model reads, and why `return` should cost one token,
+not six. **Time:** about an hour.
 
-A neural network only does arithmetic on numbers. Before it can read `def add(a, b):`, the text has
-to become a list of integers, and the integers it writes have to become text again. That's the
-tokenizer's job.
+A neural network can't read. It multiplies numbers, and that's all it does. So before it can see
+`def add(a, b):`, the text has to become a list of integers, and the integers it writes have to
+become text again. That's the tokenizer's job.
+
+Boring? It's the one part of the model you can't change later. Every weight you train in lesson 5
+is tied to these ids. Pick a bad tokenizer and you live with it.
 
 ## From bytes to tokens
 
@@ -23,8 +27,8 @@ After a few thousand rounds, frequent pieces such as `return`, `self` or four sp
 indentation are each one token. Rare text still falls back to single bytes, so nothing is ever
 "unknown".
 
-You'll write that loop now, slowly and in plain Python, so you know exactly what the fast library
-in part 2 does.
+You'll write that loop now, slowly, in plain Python. Then in part 2 you'll know exactly what the
+fast library is doing, instead of trusting it.
 
 ## Part 1: BPE by hand
 
@@ -119,7 +123,8 @@ def bpe_by_hand(text, n_merges):
 
 </details>
 
-Now watch it learn. Run it on a real file from the repo:
+Now watch it learn. Before you run it, guess: 100 merges on a 940-byte Python file. How many
+tokens are left? Write the number down. Then run it on that file:
 
 ```bash
 uv run python -c "
@@ -136,7 +141,8 @@ print([vocab[i] for i in range(256, 276)])
 [b'  ', b'    ', b' t', b'he', b', ', b'er', b'en', b'# ', b's ', b' the', b'on', b'at', b'\n    ', b'\n    "', b'\n    "<', b'\n    "<|', b'|>', b'|>"', b'|>",', b'in']
 ```
 
-100 merges cut the length by more than half. The first things it learned were two spaces, then
+100 merges cut the length by more than half. Did you guess that low? The first things it learned
+were two spaces, then
 four (indentation). By merge 15 it had built `\n    "<|` one piece at a time, because that file is a
 list of `"<|...|>"` strings, one per line. BPE learns whatever your text repeats. Train it on Python
 and it learns Python.
@@ -144,8 +150,8 @@ and it learns Python.
 ## Part 2: the real tokenizer
 
 Your version needs a full pass over the text for every merge. For 16,000 tokens over hundreds of
-megabytes, that's hours. The Rust `tokenizers` library runs the same algorithm in seconds. It also
-adds two things you need for real text.
+megabytes, that's hours. Nobody has hours. The Rust `tokenizers` library runs the same algorithm in
+seconds, and adds the things real text needs.
 
 **Byte-level.** It works on bytes, as yours did, so emoji, accents and any other Unicode
 round-trip exactly. It shows bytes as printable characters: `Ġ` is a space and `Ċ` a newline.
@@ -158,6 +164,9 @@ tokens like `e(s` that glue the end of one word to the start of the next. This a
 **Special tokens.** `theog/tokens.py` lists the markers of the chat format: `<|User|>`,
 `<|Answer|>`, `<|end|>` and so on. Each must be one token that ordinary text can never produce, at a
 fixed id (0 to 8) whatever the training text. Lesson 3 builds the format from them.
+
+Exercises 1.4 and 1.5 are wiring, not thinking: you tell the library what you just built by hand.
+The API names are given, because guessing them teaches you nothing.
 
 ### Exercise 1.4: `build_tokenizer`
 
@@ -259,5 +268,7 @@ for theOG's research experiments, which the exported model doesn't need, so they
    exactly why the training data must never contain them.
 
 </details>
+
+A tokenizer with nothing to learn from is an empty dictionary. Time to get it some data.
 
 Next: [lesson 2, the data](../02-data/README.md).

@@ -10,11 +10,17 @@ vector. The laptop model has 4 heads of 64 numbers; theOG has 4 heads of 128. Ea
 queries, keys and values. Their outputs are put side by side again and mixed by one more matrix,
 `o`.
 
-The reshaping is the only tricky part. A projection gives (B, T, heads × head_dim). Cut the last
-axis into (heads, head_dim) with `.view(B, T, heads, head_dim)`, then move the head axis forward
-with `.transpose(1, 2)`: (B, heads, T, head_dim). Now attention runs for every head at once, since
-your step 3 function didn't care about leading axes. Undo it at the end:
-`.transpose(1, 2).reshape(B, T, -1)`.
+The reshaping is the only tricky part. A projection gives (B, T, heads × head_dim). You want
+(B, heads, T, head_dim): cut the last axis into heads, then move the head axis in front of T. Then
+attention runs for every head at once, since your step 3 function didn't care about leading axes.
+At the end, undo it.
+
+<details><summary>Hint: the PyTorch calls</summary>
+
+`.view(B, T, heads, head_dim)` cuts the last axis, `.transpose(1, 2)` moves the head axis forward.
+Undo with `.transpose(1, 2).reshape(B, T, -1)`.
+
+</details>
 
 ## QK-norm
 

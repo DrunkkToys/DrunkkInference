@@ -42,11 +42,18 @@ only read itself.
 In `theog/model.py`. `q`, `k`, `v` have shape (..., T, d): there may be extra leading axes (batch,
 heads), and your code shouldn't care. Return shape (..., T, d).
 
+You already have the recipe: the four steps above, score, mask, softmax, mix. Try to write them
+from that alone. What shape is the score table? Which cells of it are "the future"?
+
+<details><summary>Hint: the PyTorch calls</summary>
+
 - `k.transpose(-2, -1)` swaps the last two axes, so `q @ k.transpose(-2, -1)` is every query
   against every key: shape (..., T, T).
 - `torch.ones(T, T, dtype=torch.bool, device=q.device).triu(1)` is True exactly above the diagonal:
   the future.
 - `scores.masked_fill(mask, float("-inf"))`, then `.softmax(-1)`, then `@ v`.
+
+</details>
 
 ```bash
 uv run pytest tests/test_04_model.py -k step3

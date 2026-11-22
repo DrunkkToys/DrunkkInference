@@ -3,13 +3,16 @@
 **You write:** the rules that strip an answer down to its solution, catch answers copied from the
 prompt, remove duplicates, tell the model what to call its function, and keep benchmark tasks out
 of the training set. **You get:**
-`data/rows.clean.jsonl`, about 95,000 clean tasks on the laptop track. **Time:** about an hour,
-plus a few minutes of downloading.
+`data/rows.clean.jsonl`, about 95,000 clean tasks on the laptop track. **You learn:** why most
+of a small model's quality is decided before training starts, and how to keep the exam out of the
+training set. **Time:** about an hour, plus a few minutes of downloading.
+
+Everybody wants to talk about the architecture. Nobody wants to talk about the data. Guess which
+one decides how good your model is.
 
 A model learns only what its data shows it. A small model is even more sensitive: it has no spare
 capacity for broken examples, duplicates, or tasks whose answer is already written in the question.
-Most of the work on theOG went into this step, and most of what makes a small model good or bad is
-decided here, not in lesson 4.
+Most of my work on theOG went into this step, not into lesson 4.
 
 This is the Phi approach ([Gunasekar et al., 2023, "Textbooks Are All You Need"](https://arxiv.org/abs/2306.11644)):
 a small set of clean tasks a model can learn from beats a much bigger pile of scraped code. The
@@ -26,7 +29,8 @@ reading that clean set more than once.
  "entry_point": "", "tests": "..."}
 ```
 
-One task in plain English, one Python solution. That's all the model will ever see.
+One task in plain English, one Python solution. That's all the model will ever see. So every
+row better be worth seeing.
 
 ## Download
 
@@ -61,7 +65,8 @@ why. These are already written for you:
   defines a function or class. Zero means no code; several means we can't tell which one is the
   answer.
 
-You write the next four.
+You write the next four. Each one exists because a model taught me the hard way that it was
+missing.
 
 ### Exercise 2.1: `solution_only`
 
@@ -91,7 +96,7 @@ def area(r):
     return math.pi * r ** 2
 ```
 
-Don't do this with string tricks. Parse the code with `parse()` (it returns an `ast.Module`, or
+Tempted to do this with string tricks and a couple of regexes? Don't. Parse the code with `parse()` (it returns an `ast.Module`, or
 None for code that isn't Python 3) and work on the tree:
 
 - At the top level, keep only node types in `_KEEP` (imports, functions, classes, assignments).
@@ -251,6 +256,9 @@ On the laptop data this adds tests to 74,324 of the 95,483 rows.
 
 ### Run the build
 
+Before you run it, guess: of the rows you downloaded, what share survives the rules? Write it
+down.
+
 ```bash
 uv run python -m theog.data build --raw data/raw --out data/rows.jsonl
 ```
@@ -266,16 +274,18 @@ drop     1,022  answer code is inside the prompt
 drop         2  answer is not Python 3 with a def/class
 ```
 
-About a minute on an M2. Read those numbers: more than half the rows we read were thrown away,
-and the skeleton cap alone removed 30,000 near-copies. If your counts differ from these, one of
+About a minute on an M2. Read those numbers: more than half the rows we read were thrown away.
+Was your guess that brutal?
+The skeleton cap alone removed 30,000 near-copies. If your counts differ from these, one of
 exercises 2.1 to 2.3 behaves differently from the reference. The tests cover the main cases, but
 the counts on real data are the real check.
 
 ## Contamination: don't train on the exam
 
 Lesson 6 scores the model on HumanEval and MBPP. If a training row contains one of those tasks, the
-model answers it from memory, and the score measures memory, not skill. Public code datasets often
-contain benchmark tasks, copied in by someone, somewhere.
+model answers it from memory, and the score measures memory, not skill. Studying with the answer
+key is not studying. And public code datasets are full of benchmark tasks, copied in by someone,
+somewhere.
 
 `theog/contamination.py` splits text into words and builds every run of 13 consecutive words
 (**13-grams**) of every benchmark prompt and reference solution. A training row is dropped when it
@@ -353,7 +363,8 @@ Before exercise 2.4, the same check matched only 58 tasks. The test lines it add
 look much more like MBPP, which is the point of the contamination check: run it *last*, on exactly
 the text you will train on.
 
-Solutions shorter than 13 words have no 13-gram and aren't checked. That's a known hole.
+Solutions shorter than 13 words have no 13-gram and aren't checked. That's a known hole. I'd
+rather tell you than pretend it isn't there.
 
 Now go back to [lesson 1](../01-tokenizer/README.md#run-it-on-real-data) and train the tokenizer
 on `rows.clean.jsonl`.
