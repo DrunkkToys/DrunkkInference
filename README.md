@@ -25,7 +25,7 @@ HumanEval (CodeGen 22/164) and 91/500 on MBPP-500 (CodeGen 87/500). Source:
 | 1 | [The tokenizer](lessons/01-tokenizer/README.md) | BPE by hand, then the real tokenizer |
 | 2 | [The data](lessons/02-data/README.md) | cleaning rules, dedup, naming the function, the contamination check |
 | 3 | [The chat format and packing](lessons/03-format-and-packing/README.md) | one training sequence with its labels, the packer |
-| 4 | [The model](lessons/04-model/README.md), in 8 steps, plus 2 you come back for (step 9 after lesson 5, and step 10, an extra, after lesson 7) | RMSNorm, attention, RoPE, heads, SwiGLU, block, whole model; reading and changing the attention |
+| 4 | [The model](lessons/04-model/README.md), in 8 steps, plus 3 you come back for (step 9 after lesson 5, and steps 10 and 11, extras, after lesson 7) | RMSNorm, attention, RoPE, heads, SwiGLU, block, whole model; reading and changing the attention, the gate |
 | 5 | [Training](lessons/05-training/README.md) | the LR schedule, the loss, the sampler, the prompt, generation |
 | 6 | [Evaluation](lessons/06-evaluation/README.md) | answer extraction, the sandboxed test runner |
 | 7 | [The /think span](lessons/07-think-span/README.md) | grounded tokens, the cost of a span in nats, and your own experiment, `psr` |

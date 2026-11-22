@@ -104,7 +104,9 @@ wrong.
 
 So the gate is the first change in this course to beat the baseline on cost. By the rule I wrote
 above, that's a success. At one seed. Remember what lesson 7's seed check did to `psr`'s MBPP lead?
-It flipped. Until a second seed agrees, the gate is a candidate, nothing more.
+It flipped. Until a second seed agrees, the gate is a candidate, nothing more. It gets its own
+step: [step 11, the gate](11-the-gate.md), what it does inside and what happens when you add it to
+lesson 7's span.
 
 The predictions above were committed before the first run started. Git has the date. When the
 numbers landed here, they landed next to what I said they'd be, wrong ones included.
@@ -132,5 +134,4 @@ uv run pytest tests/test_04_attnlab.py
 
 </details>
 
-Next: [lesson 8, export](../08-export/README.md). Notice the gate is the one change here the
-export refuses. The best result in the table is the one you can't ship. Yet.
+Next: [step 11, the gate](11-the-gate.md). Then [lesson 8, export](../08-export/README.md).
