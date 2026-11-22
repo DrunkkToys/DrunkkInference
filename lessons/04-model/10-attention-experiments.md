@@ -36,9 +36,9 @@ uv run python -m theog.train --packed data/packed --out runs/attn_kv2 --preset l
 
 Then score it like any lesson 7 design: `theog.cost` on the same 1,000 rows, HumanEval and MBPP in
 no-think mode, and the two step 9 diagnostics. The baseline is the lesson 5 model: cost 38.5 nats
-per row, HumanEval 8/164, MBPP 49/500. Seed noise on the cost is 0.7 nats. On the benchmarks it's
-much worse: the same model with seed 7 scores 3 and 58 (lesson 7, the seed check). So a benchmark gap
-under 5 HumanEval or 9 MBPP tasks is a tie too.
+per row, HumanEval 8/164, MBPP 49/500. Seed noise on the cost is 0.7 nats. On the benchmarks, don't
+use a ruler: compare each run with the baseline task by task, with the paired test
+(lesson 6, [Is B really better than A?](../06-evaluation/README.md#is-b-really-better-than-a)). A split it doesn't believe is a tie.
 
 The scoring, for `kv2`. The checkpoint remembers its `--attn`, so every tool loads the changed model
 by itself:
@@ -80,7 +80,8 @@ seeds some layer ends up mostly spare (so there's room to cut).
 | `theta1e6` | RoPE base 1e6 | 8,343,552 | 38.3–38.8 / 6–10 / 45–53. No change at 512 tokens |
 | `noqk` | no QK-norm | 8,342,784 | 38.8–41 / 4–8 / 40–50, or it blows up at lr 1e-3 |
 
-Success means beating the baseline by more than the seed noise on cost, or on both benchmarks. A
+Success means beating the baseline by more than the seed noise on cost, or on both benchmarks by
+the paired test. A
 tie with fewer parameters (`kv2`, `kv1`) is a practical win: same model, cheaper to run. Not a
 research one.
 
@@ -93,9 +94,9 @@ arguments. If one of these surprises me, good. That's the run worth having.
 | run | cost | HumanEval | MBPP | verdict |
 |---|:-:|:-:|:-:|---|
 | `none` (lesson 5) | 38.5 | 8 | 49 | the baseline |
-| `kv2` | 38.6 | 3 | 48 | a tie, 4.7% fewer parameters. My HumanEval range (6–10) was wrong; 3 is what `none` scores at seed 7 |
-| `h8x32` | 39.9 | 5 | 43 | worse: 1.4 nats behind, outside the noise. I said maybe a small gain. Wrong way |
-| `gate` | 36.5 | 12 | 59 | better on cost: 2.0 nats, three times the seed noise. I said a tie. Wrong, the good way. HumanEval +4 is noise, MBPP +10 just clears it. One seed, so a candidate, not a result |
+| `kv2` | 38.6 | 3 | 48 | a tie, 4.7% fewer parameters. HumanEval splits 7 to 2 against it (p = 0.18), MBPP 22 to 21: neither is a result. My HumanEval range (6–10) was still wrong |
+| `h8x32` | 39.9 | 5 | 43 | worse: 1.4 nats behind, outside the noise. Benchmarks 4 to 1 and 23 to 17 against it, both coin flips. I said maybe a small gain. Wrong way |
+| `gate` | 36.5 | 12 | 59 | better on cost: 2.0 nats, three times the seed noise. I said a tie. Wrong, the good way. Benchmarks 9 to 5 (p = 0.42) and 29 to 19 (p = 0.19) its way: pointing right, not proven. One seed, so a candidate, not a result |
 | `kv1` | | | | not run yet |
 | `h2x128` | | | | not run yet |
 | `theta1e6` | | | | not run yet |
