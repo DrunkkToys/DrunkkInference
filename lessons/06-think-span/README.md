@@ -370,7 +370,7 @@ that you need several seeds, or longer runs.
 
 Steps 3 to 6 all hit the same wall. If the span is a function of P and C, writing it can't be
 cheaper than writing C straight away: at best the work is the same, split in two. So we tried
-five designs that get around the wall in different ways. Every run is the lesson 5 recipe, 3
+six designs that get around the wall in different ways. Every run is the lesson 5 recipe, 3
 epochs, seed 42, scored on `final.pt`, on the same 1,000 rows as every table above. Before each
 run we wrote the prediction down (`runs/<name>/PREDICTION.md`).
 
@@ -381,8 +381,9 @@ run we wrote the prediction down (`runs/<name>/PREDICTION.md`).
 | `psig` | `def count_pos(1 arg) -> int` | the signature, built from the **prompt** alone (its first `assert`, or its `def` line) |
 | `retr` | `similar task:` and the code of the closest **training** task | retrieval: knowledge from outside the weights ([RETRO](https://arxiv.org/abs/2112.04426), [kNN-LM](https://arxiv.org/abs/1911.00172)) |
 | `lat8`, `lat8p` | 8 vectors, not tokens | latent interpolation: points on the line from the prompt to the code ([Coconut](https://arxiv.org/abs/2412.06769)) |
+| `psr` | `psig`'s signature, then `retr`'s neighbor | the two half-winners in one span |
 
-`psig` and `retr` are built without the answer, so at inference the harness writes them into the
+`psig`, `retr` and `psr` are built without the answer, so at inference the harness writes them into the
 span for free: training puts no loss on them (`mask_prefill` in `theog/think.py`), and
 `theog.evaluate --design` prefills them. `retr` searches only the training split, never returns the
 row itself, and on the benchmarks its neighbor is never the reference solution (0 of 164, 0 of
@@ -417,8 +418,9 @@ The `--fit` list keeps the same 1,000 rows as the tables above. What we got:
 | `psig` | 0 | 38.9 | **38.9** | 8 | 53 |
 | `retr` | 0 | 38.8 | **38.8** | 12 | 46 |
 | `lat8` | 0 | 94.4 | **94.4** | 0 | 0 |
+| `psr` | 0 | 40.0 | **40.0** | 14 | 56 |
 
-None of them beats the empty span. The four token designs land within 0.6 nats of `none`, inside
+None of them beats the empty span on cost. The four token designs land within 0.6 nats of `none`, inside
 the seed noise: a second seed of `none` scores 37.8, of `pause4` 38.3. What each one taught us:
 
 - **`pause4` changes which tasks pass, not how many.** Same score as `none` on both benchmarks, but
@@ -439,6 +441,11 @@ the seed noise: a second seed of `none` scores 37.8, of `pause4` 38.3. What each
   model doesn't have, and the prediction was 30 to 36 nats. It's 38.8. On HumanEval it passes 12,
   the best score in the table, and on MBPP 46, so +1 task over 664. The neighbor helps on some
   tasks and misleads on others.
+- **`psr` loses on cost and wins on both benchmarks.** Wait, what? Its answers cost 1.5 nats more
+  than `none`'s, outside the noise, and it's the best HumanEval and the best MBPP in the table. My guess:
+  the answer it's scored on is the reference solution, and the neighbor pulls the model away from that
+  exact text. The benchmarks don't care about the text: they run the tests. A different solution
+  that passes is a pass. So which number do you believe? Neither, yet. See the seed check below.
 - **`lat8` collapses, and the reason is in the training.** The model always trained on vectors
   built from the answer, so it learned to read the answer out of them. On 20 rows the answer costs
   14.9 nats with those vectors (a leak, a reference only), 19.4 with no vectors (`none`), and 65.6
@@ -468,11 +475,40 @@ validation loss is 0.475, behind `none` (0.466, seed 7) and `pause4` (0.457). We
 there, since 7,000 more steps can't make vectors that carry nothing beat the pause. Swap your vectors for someone else's before you trust them: if the
 cost doesn't move, they're pause tokens.
 
+### The seed check: is `psr` real?
+
+One seed of `psr` beat `none` on both benchmarks. That's the first time any design did. So before
+writing a word about it, I trained both again with seed 7, and wrote the bar down before the run:
+`psr` counts only if it reaches HumanEval 6 or more and MBPP 58 or more against `none` at seed 7.
+
+| 3 epochs | cost, seed 42 | seed 7 | HumanEval, seed 42 | seed 7 | MBPP, seed 42 | seed 7 |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| `none` | 38.5 | 37.8 | 8 | 3 | 49 | 58 |
+| `psr` | 40.0 | 39.9 | 14 | 16 | 56 | 57 |
+
+Look at `none` first. Same data, same recipe, only the seed changes, and HumanEval goes from 8 to 3,
+MBPP from 49 to 58. **On the benchmarks, the seed alone moves the score by 5 and 9 tasks.** Every
+single-seed benchmark gap in this lesson smaller than that, `psig`'s +4 on MBPP and `retr`'s +4 on
+HumanEval included, is noise. I'd have bet those were small hints. They're not even that.
+
+Now `psr`:
+
+- **Cost: worse at both seeds**, by 1.5 and 2.1 nats. That's real.
+- **HumanEval: better at both seeds**, by 6 and by 13. 30 of 328 against 11 of 328. That's real too.
+- **MBPP: a tie.** +7 at seed 42, −1 at seed 7. It missed my bar by one task.
+
+So by the rule I wrote before the run, `psr` doesn't clear it. One task short, and I'm not moving the
+bar after the fact. That's the whole point of writing it first. But the HumanEval result held at two
+seeds, by more than the noise both times, and nothing else in this lesson did that.
+
 ## What we conclude
 
-No span beats the empty span on this model: not text built from the code (steps 3 to 6), not a
-reordering, not free tokens from the prompt, not a neighbor's code, not latent vectors. The empty
-span, theOG's pause, is still the best design we found at 8M parameters. Every text design moves
+No span beats the empty span on cost on this model: not text built from the code (steps 3 to 6),
+not a reordering, not free tokens from the prompt, not a neighbor's code, not latent vectors. The
+empty span, theOG's pause, is still the best design we found at 8M parameters by that measure. One
+design, `psr`, writes code that passes more HumanEval tests at two seeds while its cost is worse.
+Cost measures how well the model predicts *the* reference solution; the benchmarks measure whether
+it writes *a* working one. At 8M parameters, those two disagree. Every text design moves
 work from the answer to the span, and the span costs more to write than it saves; the designs that
 cost nothing to write save nothing either, beyond the noise. That's a result about this model size,
 not about think spans: the question for a bigger model is whether its span cost falls faster than
@@ -480,8 +516,8 @@ its answer cost, and `theog.cost` measures exactly that.
 
 ## Why we ran them all
 
-Why train six designs when the theory already tells you which one should win? Because the
-theory was wrong six times out of six. I wrote every prediction down before the run, so I
+Why train seven designs when the theory already tells you which one should win? Because the
+theory was wrong seven times out of seven. I wrote every prediction down before the run, so I
 couldn't quietly bend it afterwards. Here's the scoreboard:
 
 | design | what the argument said | what the run said |
@@ -492,22 +528,25 @@ couldn't quietly bend it afterwards. Here's the scoreboard:
 | `lat8` | vectors on the road from the prompt to the code. At step 1,000 its val loss beats `none`'s | 94.4 nats, 0 and 0. The val loss was a lie: the vectors carried the answer |
 | `lat8p` | no leak, so the vectors carry a summary of the prompt | swap them for another prompt's: 41.8 vs 41.9. They carry nothing |
 | `pause4` | extra positions to think in | same score as `none`, on different tasks: 28 MBPP tasks pass only with one, 28 only with the other |
+| `psr` | the two half-winners together: cost 38.6 to 39.0, HumanEval 9 to 13, MBPP 47 to 53 | 40.0, 14 and 56. Wrong on all three, and the two benchmark misses went the good way |
 
 The arguments weren't stupid. They were blind. None of them could see that only 9 of 95,483
 training prompts look like HumanEval, that HumanEval prompts have no `assert`, that the target
 vectors held the answer, or that a small model ignores any input it can live without. Every one of
 those showed up the same way: a number that didn't fit the story.
 
-One run proves nothing. Two runs of the same design with different seeds land 0.7 nats apart. A
-design scored alone is an anecdote; six designs on the same 1,000 rows, same seed, same scoring,
-are an experiment. So far none of them clears the noise. That's a result too, just not the one
-anybody wanted.
+One run proves nothing. Two runs of the same design with different seeds land 0.7 nats apart on
+cost, and 5 HumanEval and 9 MBPP tasks apart on the benchmarks. A design scored alone is an
+anecdote; seven designs on the same 1,000 rows, same seed, same scoring, are an experiment, and a
+second seed is what turns a lucky number into a result. On cost, none of them clears the noise.
+That's a result too, just not the one anybody wanted.
 
 Every dead design takes a whole family of ideas with it: text built from the code, reordering the
 code, free tokens from the prompt, vectors instead of words. Measured, not argued. That's how you
 get closer to the right answer: not by being clever, by being wrong faster. And sometimes two
-half-results point somewhere. `psig` nudged MBPP, `retr` nudged HumanEval. You only notice if you
-ran both, which is why the next run puts them together.
+half-results point somewhere. `psig` nudged MBPP, `retr` nudged HumanEval. Both nudges turned out to be
+noise on their own. Put together as `psr`, they gave the only HumanEval win that survived a second
+seed. You only find that if you ran both, and then ran it twice.
 
 What keeps the numbers honest:
 
@@ -518,8 +557,8 @@ What keeps the numbers honest:
 - Every number gets checked against its log. Mine included: I once pinned two validation losses
   on the wrong runs, and only rereading each log one by one caught it.
 
-Theory tells you what to try. The data tells you what's true. At 8M parameters the empty span wins,
-and not one of our arguments said it would.
+Theory tells you what to try. The data tells you what's true. At 8M parameters the empty span wins
+on cost, `psr` wins on HumanEval, and not one of our arguments said either would.
 
 ## What it did for theOG
 
