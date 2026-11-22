@@ -116,34 +116,50 @@ uv run python -m theog.attnlab mass --ckpt runs/attn_gate/final.pt
 uv run python -m theog.attnlab heads --ckpt runs/attn_gate/final.pt
 ```
 
-## The gate and the think span: still open
+## The gate and the think span
 
-Why would the gate and lesson 7's span go together? The span is the tokens before the answer
-where the model gets extra compute. The gate decides, per token, how much of each head gets
-through. So in principle the model could open heads on the span and the prompt and turn them down
-where they only add noise. A span that's mostly ignored, like `lat8p`'s, could get the volume it
-deserves. Or none at all.
+Why would the gate and lesson 7's span go together? `psr`'s span carries a neighbour: the code of
+a similar training row. Lesson 4 step 9 showed the answer reads it (14% of its attention in
+`retr`), and lesson 7 showed it helps about as often as it misleads. The gate can turn a head down
+per token. So my bet: with a gate, the model learns to shut the neighbour off when it misleads.
 
-That's a hypothesis. Here's the only run so far. I trained `psr` with the gate,
-seed 42, and wrote down what both parents predicted: better cost, and the benchmarks at least as
-good as `psr`'s.
+The prediction, written before the run: cost 39.0–40.0, HumanEval 12–18, MBPP 50–58.
 
 | | cost | HumanEval | MBPP |
 |---|:-:|:-:|:-:|
 | `psr` | 40.0 | 14 | 56 |
 | `psr` + gate | 38.7 | 8 | 48 |
 
-Cost: 1.3 nats better, almost what the gate gave `none`. The benchmarks: both down. HumanEval
-10 to 4 against the gate (p = 0.18), MBPP 26 to 18 against it (p = 0.29).
+Cost: 1.3 nats better, beyond my range. Benchmarks: both below it. HumanEval 10 to 4 against the
+gate (p = 0.18), MBPP 26 to 18 against it (p = 0.29). Not significant, but it breaks the pattern:
+better cost, worse on both benchmarks, against what both parents said. Not seed noise until
+something shows it is.
 
-Not significant. But this is the run that breaks the pattern: better cost, worse on both
-benchmarks, against what both parents said. I don't know why yet, and I'm not going to call it
-seed noise to make it go away. That's exactly the kind of result that's either a bug or the
-interesting part.
+So did the gate learn to filter the neighbour? Test it directly. On 200 rows, score the answer
+three ways: with its own span, with another row's span, and with an empty one.
 
-What would tell us? One idea: the `none` model shut layer 0 and opened the rest. Gate only layer
-0 on `psr`, or only layers 1 to 5, and see which half brings the benchmarks down. Until those runs
-exist, this section has a question in it, not an answer. When they land, they land here.
+| model | own span | another row's span | empty span |
+|---|:-:|:-:|:-:|
+| `psr` | 25.53 | 30.12 | 27.97 |
+| `psr` + gate | 24.57 | 28.77 | 26.80 |
+
+A wrong neighbour costs `psr` 4.6 nats, and the gated model 4.2. Almost the same. The gate's gain,
+about 1 nat, is there with the right neighbour, a wrong one, or none at all. It has nothing to do
+with the neighbour.
+
+And the gate itself? At the answer tokens, layer 0 sits at 0.07–0.09 on every head, the other
+layers 0.3–0.8. The same shape as the gate on `none`. It learned the same per-layer damping, not
+a neighbour filter. My bet was wrong: the mechanism I wanted isn't the one the model learned.
+
+What's still open:
+
+- **Is it the seed?** One seed can't say whether the gate cancels `psr`'s HumanEval gain, or seed
+  42 was unlucky. `psr` + gate at seed 7, against `psr` at seed 7 (16 / 57), would.
+- **Which layers?** Gate only layers 1 to 5 on `psr`, leaving layer 0 plain. If the layer 0 damping
+  is what cost `psr` its HumanEval, this keeps it. My prediction: 38.9–39.6 / 11–16 / 50–58. And
+  the opposite, the gate on layer 0 only: 38.8–39.6 / 8–14 / 46–56.
+
+Neither has run. When they do, the results land here, next to those predictions.
 
 ## Why it's a candidate, not a result
 
