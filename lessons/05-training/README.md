@@ -40,6 +40,10 @@ def loss_fn(logits, labels):
 
 </details>
 
+```bash
+uv run pytest tests/test_05_train.py -k loss
+```
+
 The test gives the loss a uniform guess and checks ln 4, then puts a confident guess at an ignored
 position and checks that nothing changes. That's lesson 3's labels at work: the prompt is never
 graded.
@@ -68,6 +72,10 @@ Return the multiplier of the peak learning rate at update `update` of `total`:
 lr_factor(0, 100, 5)     # 0.0
 lr_factor(5, 100, 5)     # 1.0, the peak
 lr_factor(100, 100, 5)   # 0.1
+```
+
+```bash
+uv run pytest tests/test_05_train.py -k lr_schedule
 ```
 
 <details><summary>Solution</summary>
@@ -112,17 +120,15 @@ you whether what it learns carries over to new tasks.
 
 ## Train it
 
-Check first that your code trains at all. The test trains the tiny model on toy rows on the CPU:
+Your two pieces green? Lesson 4's tests too? Then start the real run. It takes 2½ hours, so you
+write the sampler and the generation loop (exercises 5.3 to 5.5, below) while it trains. Why sit
+and watch a loss curve?
 
-```bash
-uv run pytest tests/test_05_train.py -k learns
-```
+The last test of the lesson, `-k learns`, waits for those three. It trains the tiny model on toy
+rows on the CPU and checks that the validation loss falls below 2.5 (from about 6.2), that a second
+run resumes instead of restarting, and that the trained model writes the start of an answer.
 
-It checks the validation loss falls below 2.5 (from about 6.2), that a second run resumes instead of
-restarting, and that the trained model writes the start of an answer. It needs exercises 5.3 to
-5.5 too (below), so it goes green once you've done them.
-
-Then the real run:
+The real run:
 
 ```bash
 uv run python -m theog.train --packed data/packed --out runs/laptop --preset laptop --epochs 3 \
