@@ -64,12 +64,12 @@ class Index:
 
     def nearest(self, user: str) -> str:
         me = _key(user)
-        q = sorted((w for w in _words(user) if w in self.idf), key=lambda w: -self.idf[w])[:MAX_QUERY]
+        q = sorted((w for w in _words(user) if w in self.idf), key=lambda w: (-self.idf[w], w))[:MAX_QUERY]
         score = defaultdict(float)
         for w in q:
             for i in self.post[w]:
                 score[i] += self.idf[w]
-        for i, _ in sorted(score.items(), key=lambda kv: -kv[1]):
+        for i, _ in sorted(score.items(), key=lambda kv: (-kv[1], kv[0])):  # ties: the earlier row
             if self.keys[i] != me:
                 return _cut(self.code[i])
         return ""
