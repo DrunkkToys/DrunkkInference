@@ -193,7 +193,7 @@ About 20 seconds. 22 million training tokens. 5,665 rows were longer than 512 to
 dropped, about 6%.
 
 `theog.pack` has one more flag, `--think`, which fills every row's think span with one of lesson 6's
-designs. Leave it at its default, `none`: lessons 4 to 5 train on the empty span.
+designs. Leave it at its default, `none`: lesson 5 trains on the empty span.
 
 Now look at what you made. Decode the first window:
 

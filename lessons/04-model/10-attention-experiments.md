@@ -1,6 +1,8 @@
 # Step 10: changing the attention
 
-**After lesson 5, like step 9.** Each run here is a full training, about 2.5 hours on a laptop.
+**Come back here after lesson 7.** Every change is scored on HumanEval and MBPP, so you need
+lesson 7's harness, and the method is lesson 6's. Each run is a full training, about 2½ hours on a
+laptop.
 
 Every new model paper changes the attention. Fewer key/value heads. More heads. A gate. A bigger
 RoPE base. Each comes with a chart that goes up and to the right, measured on a model 1,000 times
@@ -69,8 +71,8 @@ Success means beating the baseline by more than the seed noise on cost, or on bo
 tie with fewer parameters (`kv2`, `kv1`) is a practical win: same model, cheaper to run. Not a
 research one.
 
-Look at that table. Five ties, two losses, one maybe. Am I that pessimistic? No. At this size
-almost every clever idea has been a tie or worse. Lesson 6 went six for six against my
+Look at that table. Three ties, three losses, one maybe. Am I that pessimistic? No. At this size
+almost every clever idea has been a tie or worse. Lesson 6 went seven for seven against my
 arguments. If one of these surprises me, good. That's the run worth having.
 
 ## The results
@@ -80,11 +82,15 @@ arguments. If one of these surprises me, good. That's the run worth having.
 | `none` (lesson 5) | 38.5 | 8 | 49 | the baseline |
 | `kv2` | 38.6 | 3 | 48 | a tie, 4.7% fewer parameters. My HumanEval range (6–10) was wrong; 3 is what `none` scores at seed 7 |
 | `h8x32` | 39.9 | 5 | 43 | worse: 1.4 nats behind, outside the noise. I said maybe a small gain. Wrong way |
-| `gate` | | | | running |
-| `kv1` | | | | queued |
-| `h2x128` | | | | queued |
-| `theta1e6` | | | | queued |
-| `noqk` | | | | queued |
+| `gate` | 36.5 | 12 | 59 | better on cost: 2.0 nats, three times the seed noise. I said a tie. Wrong, the good way. HumanEval +4 is noise, MBPP +10 just clears it. One seed, so a candidate, not a result |
+| `kv1` | | | | not run yet |
+| `h2x128` | | | | not run yet |
+| `theta1e6` | | | | not run yet |
+| `noqk` | | | | not run yet |
+
+So the gate is the first change in this course to beat the baseline on cost. By the rule I wrote
+above, that's a success. At one seed. Remember what lesson 6's seed check did to `psr`'s MBPP lead?
+It flipped. The gate gets a second seed before I call it anything.
 
 The predictions above were committed before the first run started. Git has the date. When the
 numbers land here, they land next to what I said they'd be, wrong ones included.
@@ -112,5 +118,5 @@ uv run pytest tests/test_04_attnlab.py
 
 </details>
 
-Next: [lesson 5, training](../05-training/README.md), if you came here early. Otherwise
-[lesson 6, the /think span](../06-think-span/README.md).
+Next: [lesson 8, export](../08-export/README.md). Notice the gate is the one change here the
+export refuses. The best result in the table is the one you can't ship. Yet.

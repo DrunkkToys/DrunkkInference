@@ -253,4 +253,6 @@ Open the results file to see any answer in full:
 </details>
 
 
-Next: [lesson 8, export](../08-export/README.md).
+You can score a model now. That's the key to the last experiment in lesson 4:
+[step 10, changing the attention](../04-model/10-attention-experiments.md). Seven changes, one at a
+time, each one scored right here. Or go straight to [lesson 8, export](../08-export/README.md).
