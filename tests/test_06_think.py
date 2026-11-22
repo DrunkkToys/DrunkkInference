@@ -3,6 +3,7 @@ import io
 import json
 import re
 import tokenize
+from pathlib import Path
 
 import pytest
 import torch
@@ -12,7 +13,7 @@ from theog.cost import nats
 from theog.format import sequence
 from theog.model import TheOG, tiny
 from theog.pack import load, pack
-from theog.think import DESIGNS, grounded, plan, shared, sig, skeleton, think_text
+from theog.think import DESIGNS, RETRIEVED, grounded, plan, shared, sig, skeleton, think_text
 from theog.tokens import ANSWER, IGNORE, THINK, THINK_CLOSE
 
 ANSWER_CODE = '''def count_char_freq(s):
@@ -60,6 +61,8 @@ def test_every_design_on_one_row():
 def test_designs_are_deterministic_and_never_crash():
     broken = dict(ROW, answer="def f(:\n  return")
     for name, design in DESIGNS.items():
+        if name in RETRIEVED and not Path("data/rows.clean.jsonl").exists():
+            continue  # retrieval searches lesson 2's rows: nothing to search yet
         assert design(ROW) == design(dict(ROW))
         assert isinstance(design(broken), str), name
 

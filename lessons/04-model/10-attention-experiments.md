@@ -40,6 +40,19 @@ per row, HumanEval 8/164, MBPP 49/500. Seed noise on the cost is 0.7 nats. On th
 much worse: the same model with seed 7 scores 3 and 58 (lesson 6, the seed check). So a benchmark gap
 under 5 HumanEval or 9 MBPP tasks is a tie too.
 
+The scoring, for `kv2`. The checkpoint remembers its `--attn`, so every tool loads the changed model
+by itself:
+
+```bash
+uv run python -m theog.cost --ckpt runs/attn_kv2/final.pt --tokenizer data/tokenizer.json --think none
+uv run python -m theog.evaluate --ckpt runs/attn_kv2/final.pt --tokenizer data/tokenizer.json \
+  --dataset humaneval --out runs/attn_kv2/he
+uv run python -m theog.evaluate --ckpt runs/attn_kv2/final.pt --tokenizer data/tokenizer.json \
+  --dataset mbpp500 --out runs/attn_kv2/mbpp
+uv run python -m theog.attnlab mass --ckpt runs/attn_kv2/final.pt
+uv run python -m theog.attnlab heads --ckpt runs/attn_kv2/final.pt
+```
+
 ## Why GQA saves anything
 
 Look at step 5. Every head has its own k and v. At generation time you keep every past token's k

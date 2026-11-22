@@ -19,6 +19,9 @@ tokens and rows.
 uv run python -m theog.attnlab mass --ckpt runs/laptop/final.pt
 ```
 
+`final.pt`, not `best.pt`: the experiments compare the weights after the last step. On your
+lesson 5 run they're the same weights anyway.
+
 My laptop model, trained in lesson 5:
 
 ```
