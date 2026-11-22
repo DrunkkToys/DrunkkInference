@@ -1,6 +1,6 @@
 # Step 10: changing the attention
 
-**Come back here after lesson 7.** Every change is scored on HumanEval and MBPP, so you need
+**An extra, for after lesson 7.** Every change is scored on HumanEval and MBPP, so you need
 lesson 6's harness, and the method is lesson 7's. Each run is a full training, about 2½ hours on a
 laptop.
 

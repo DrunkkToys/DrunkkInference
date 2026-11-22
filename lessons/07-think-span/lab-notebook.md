@@ -1,7 +1,8 @@
 # Lesson 7 lab notebook: steps 5 to 7
 
 This is the long version of [lesson 7](README.md): the eleven designs after the plan, with every
-command, every prediction written before the run, and every table. You don't need it to move on.
+command, every prediction written before the run, and every table. You don't need it to move on: it's
+the extras of [Do you want to fail or underperform?](README.md#do-you-want-to-fail-or-underperform).
 Read it when you want to see what an experiment looks like from the inside, dead ends included.
 
 Steps 1 to 4, the two exercises and the cost measure are in the lesson. Everything here uses them.

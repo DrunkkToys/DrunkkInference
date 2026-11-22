@@ -1,22 +1,20 @@
 # Lesson 7: the /think span, an experiment
 
 **You write:** `grounded` in `theog/think.py` (exercise 7.1) and `nats` in `theog/cost.py`
-(exercise 7.2). **Then you run:** an experiment that asks what to write inside the think span, and
-how to tell if it helps. **You learn:** why a span can hurt, how to measure what it costs, and how
-to run an experiment that can prove you wrong. **Time:** about an hour to read and do the
-exercises.
+(exercise 7.2). **Then you run:** one experiment, `psr`: a prediction in writing, a training run, and
+the scoring. **You learn:** why a span can hurt, how to measure what it costs, and how to run an
+experiment that can prove you wrong. **Time:** about an hour to read and do the exercises, plus
+about 4 hours of machine time for your run.
 
-The exercises and their tests are all you need to move on. Every run below is optional: the
-lesson gives its results, so you can read it straight through. If you do run them:
-
-| step | what it needs | time on an M2 |
+| step | what you run | time on an M2 |
 |---|---|---|
-| 1 | your lesson 5 model | a minute |
-| 3 | a 3-epoch run with the plan | about 2½ hours |
-| 4 | your lesson 5 model and the step 3 model | a few minutes |
+| 1 | your lesson 5 model, in `/think` mode | a minute |
+| 4 | the cost of your lesson 5 model | a few minutes |
+| [your experiment](#your-experiment-psr) | train and score `psr` | about 4 hours, almost all of it training |
 
-Steps 5 to 7, the other eleven designs, live in [the lab notebook](lab-notebook.md): every command,
-prediction and table, in the order it happened. This page keeps the results.
+Everything else we ran, twelve designs and two seeds, is at the end, in
+[Do you want to fail or underperform?](#do-you-want-to-fail-or-underperform) For the few who want
+more than one experiment.
 
 Every score here comes from the lesson 6 harness. The experiment scores `final.pt`, the weights after the last step, so every
 design is measured at the same budget. For the lesson 5 run that is the same model as `best.pt`.
@@ -156,23 +154,9 @@ uv run pytest tests/test_07_think.py -k "design or plan or think_text"
 ## Step 3: the first try, the plan
 
 The plan came first: it looks the most like "thinking". We packed every row with it, trained the
-lesson 5 recipe (3 epochs) and wrote down a prediction before scoring:
-
-```bash
-uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokenizer.json \
-    --out data/packed_plan --seq-len 512 --think plan
-uv run python -m theog.train --packed data/packed_plan --out runs/think-plan --preset laptop --epochs 3 \
-    --batch-size 16 --accum 1 --lr 1e-3 --eval-every 1000 --eval-windows 200 --log-every 500
-```
-
-`--seq-len 512` matches the laptop model, as in lesson 5. The scores:
-
-```bash
-uv run python -m theog.evaluate --ckpt runs/think-plan/final.pt --tokenizer data/tokenizer.json \
-    --think --dataset humaneval --out runs/think-plan/he
-uv run python -m theog.evaluate --ckpt runs/think-plan/final.pt --tokenizer data/tokenizer.json \
-    --think --dataset mbpp500 --out runs/think-plan/mbpp
-```
+lesson 5 recipe (3 epochs) and wrote down a prediction before scoring. You don't need to train this
+one: it's 2½ hours to watch an idea lose. The commands are in
+[the extras](#do-you-want-to-fail-or-underperform) if you want to watch anyway. Our prediction:
 
 > HumanEval `/think` 4 to 10 of 164, MBPP-500 35 to 60 of 500. No collapse: the span is trained now.
 
@@ -242,12 +226,15 @@ def nats(model, ids, labels):
 
 </details>
 
-Now score the two 3-epoch models on the same 1,000 validation rows:
+Now score your lesson 5 model on 1,000 validation rows:
 
 ```bash
-uv run python -m theog.cost --ckpt runs/laptop/final.pt --tokenizer data/tokenizer.json --think none
-uv run python -m theog.cost --ckpt runs/think-plan/final.pt --tokenizer data/tokenizer.json --think plan
+uv run python -m theog.cost --ckpt runs/laptop/final.pt --tokenizer data/tokenizer.json --think none \
+    --fit none,sig,shared,skeleton,plan,pause16
 ```
+
+`--fit` picks the rows: the first 1,000 that fit in 512 tokens in every design listed, so every
+table in this lesson scores the same rows. Here's your number next to our plan run:
 
 | 3 epochs | span | answer | total, nats per row |
 |---|:-:|:-:|:-:|
@@ -259,10 +246,63 @@ There's the reason. The plan does make the answer cheaper, by 8.7 nats. But writ
 writing it is about as hard as writing the code. The score in step 3 was this table, measured
 another way.
 
-## Steps 5 to 7, in short
+## Your experiment: `psr`
+
+That's the wall: if the model has to write the span, the span costs about what it saves. So build a
+span the model never has to write. `psr` fills it with two things the harness can work out from the
+prompt alone, before the model writes a token:
+
+- **the signature**, read from the prompt: its first `assert`, or its `def` line. For "Write a
+  function `count_pos`… `assert count_pos([1,-2,3]) == 2`" that's `def count_pos(1 arg) -> int`.
+- **a neighbour**: `similar task:` and the code of the training task whose prompt shares the most
+  rare words with this one (`theog/retrieve.py`). It searches the training split only, never
+  returns the row itself, and on the benchmarks the neighbour is never the reference solution (0 of
+  164, 0 of 500).
+
+Neither uses the answer, so at inference the harness writes the span in (`theog.evaluate --design
+psr`), and training puts no loss on it (`mask_prefill` in `theog/think.py`). The span costs the
+model nothing. The only question is what it does to the answer.
+
+**Write your prediction first.** Before you train anything, put three numbers and one rule in
+`runs/think-psr/PREDICTION.md`: the answer cost against your `none`, the HumanEval score, the MBPP
+score, and what result would make you call `psr` better. Now, not after the run. A prediction you
+write after seeing the score is a caption.
+
+Then build the index, pack and train:
+
+```bash
+uv run python -m theog.retrieve
+uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokenizer.json \
+    --out data/packed_psr --seq-len 512 --think psr
+uv run python -m theog.train --packed data/packed_psr --out runs/think-psr --preset laptop --epochs 3 \
+    --batch-size 16 --accum 1 --lr 1e-3 --eval-every 1000 --eval-windows 200 --log-every 500
+```
+
+The index takes about 5 minutes. Training takes about 3½ hours, an hour more than lesson 5: the
+span makes every row longer, so the same 3 passes are about 15,000 steps instead of 10,885.
+
+Score it the way you scored your lesson 5 model, then compare the two task by task:
+
+```bash
+uv run python -m theog.cost --ckpt runs/think-psr/final.pt --tokenizer data/tokenizer.json --think psr \
+    --fit none,sig,shared,skeleton,plan,pause16
+uv run python -m theog.evaluate --ckpt runs/think-psr/final.pt --tokenizer data/tokenizer.json \
+    --design psr --dataset humaneval --out results/
+uv run python -m theog.evaluate --ckpt runs/think-psr/final.pt --tokenizer data/tokenizer.json \
+    --design psr --dataset mbpp500 --out results/
+uv run python -m theog.compare results/laptop_humaneval_no_think_t0.0_*.jsonl results/think-psr_humaneval_psr_t0.0_*.jsonl
+uv run python -m theog.compare results/laptop_mbpp500_no_think_t0.0_*.jsonl results/think-psr_mbpp500_psr_t0.0_*.jsonl
+```
+
+Read your two benchmarks together. If one moves and the other goes the opposite way, don't shrug:
+open the answers and find out why.
+
+Got your numbers? Good. Only now read on: the next section has ours.
+
+## What we found: twelve designs
 
 One design is an anecdote. So we ran twelve. [The lab notebook](lab-notebook.md) has the full
-write-up; here's what it found, in three moves:
+write-up, in its steps 5 to 7. Here's what it found, in three moves:
 
 - **Step 5, the screen.** Five spans built from the prompt and the code, half an epoch each. Only
   `sig` (the function's signature) came in under the empty span, by 2%.
@@ -332,6 +372,19 @@ So by the rule I wrote before the run, `psr` doesn't clear it. One task short, a
 bar after the fact. That's the whole point of writing it first. But the HumanEval gain held at two
 seeds, passed the paired test at one of them, and nothing else in this lesson did either.
 
+### Your run against ours
+
+Put your numbers in the table: cost, HumanEval, MBPP, and your two paired tests against your own
+`none`. Ours, at seed 42 and seed 7: cost 40.0 and 39.9, HumanEval 14 and 16, MBPP 56 and 57. And
+our prediction, written before our first `psr` run: cost 38.6 to 39.0, HumanEval 9 to 13, MBPP 47
+to 53. Wrong on all three. The cost came in worse and both benchmarks better.
+
+Then answer three questions in your prediction file, under what you wrote before:
+
+1. Which of your numbers fell outside your range, and which way?
+2. Does your HumanEval gain pass the paired test? Does your MBPP one?
+3. By your own rule, written before the run, is `psr` better? Not by the rule you'd like now.
+
 ## What we conclude
 
 No span beats the empty span on cost on this model: not text built from the code (steps 3 to 6),
@@ -380,6 +433,38 @@ greedy:
 The two modes solve partly different tasks, with nothing written in the span. Whether a span with
 text in it beats that at 50M is the experiment this lesson's tools let you run.
 
+## Do you want to fail or underperform?
+
+Most people stop after their `psr` run, and that's fine: you've done a real experiment, end to end.
+This part is for the few who want to see how we got there. Every run below is one we made, most of
+them losers, each with its prediction, commands and result in [the lab notebook](lab-notebook.md).
+Want to fail? Pick a loser and find out why it loses. Want to underperform? Try to beat `psr`.
+
+| run | what it teaches | time on an M2 | where |
+|---|---|---|---|
+| `plan` at 3 epochs | a span the model writes costs more than it saves | about 2½ hours | below |
+| the screen: five designs, half an epoch each | a cheap screen kills big losers and can't rank close ones | about 25 minutes each | [step 5](lab-notebook.md#step-5-the-screen) |
+| `sig` at 3 epochs, and the screen at seed 7 | the screen's winner losing at full budget | about 2½ hours, plus 25 minutes each | [step 6](lab-notebook.md#step-6-check-the-winner) |
+| `pause4`, `c2f1`, `psig`, `retr`, `lat8` | spans the model doesn't pay for, and why each still loses | 2½ to 4 hours each | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+| `psr` again with `--seed 7` | whether your win survives a second seed | about 3½ hours | [your experiment](#your-experiment-psr)'s commands, with `--seed 7` and a new `--out` on `theog.train` |
+| your own span | Going further, question 3 | depends | below |
+| seven changes to the attention | the same method on the model itself | about 2½ hours each | [lesson 4, step 10](../04-model/10-attention-experiments.md) |
+
+The `plan` run from step 3:
+
+```bash
+uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokenizer.json \
+    --out data/packed_plan --seq-len 512 --think plan
+uv run python -m theog.train --packed data/packed_plan --out runs/think-plan --preset laptop --epochs 3 \
+    --batch-size 16 --accum 1 --lr 1e-3 --eval-every 1000 --eval-windows 200 --log-every 500
+uv run python -m theog.cost --ckpt runs/think-plan/final.pt --tokenizer data/tokenizer.json --think plan \
+    --fit none,sig,shared,skeleton,plan,pause16
+uv run python -m theog.evaluate --ckpt runs/think-plan/final.pt --tokenizer data/tokenizer.json \
+    --think --dataset humaneval --out results/
+uv run python -m theog.evaluate --ckpt runs/think-plan/final.pt --tokenizer data/tokenizer.json \
+    --think --dataset mbpp500 --out results/
+```
+
 ## Going further
 
 1. Why can't the span be written by hand, or by a bigger model, for each training row?
@@ -412,6 +497,5 @@ text in it beats that at 50M is the experiment this lesson's tools let you run.
 
 </details>
 
-You know how to test an idea now. Lesson 4 has one more for you:
-[step 10, changing the attention](../04-model/10-attention-experiments.md). Seven changes, one at a
-time, scored the same way. Or go straight to [lesson 8, export](../08-export/README.md).
+You know how to test an idea now, and you've tested one. Next: [lesson 8, export](../08-export/README.md),
+where your lesson 5 model becomes a file you run in Ollama.
