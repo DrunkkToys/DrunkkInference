@@ -44,6 +44,7 @@ token ids
 | [8](8-full-model.md) | the whole model, tied output | `TheOG.forward` | `-k step8` |
 | [9](9-reading-attention.md) | reading the attention of a trained model | nothing: run it | `test_04_attnlab.py` |
 | [10](10-attention-experiments.md) | changing the attention: GQA, heads, a gate | your prediction | `test_04_attnlab.py` |
+| [11](11-the-gate.md) | the gate: what it does inside, and with the think span | nothing: read it | — |
 
 Run one step's tests with:
 
@@ -61,9 +62,10 @@ it. The calls are easy to look up; knowing which ones you need is the part that 
 
 Do the steps in order. Each test only uses the steps before it.
 
-Steps 9 and 10 are the odd ones out. They need a *trained* model, so skip them now. Step 9 comes
-after lesson 5. Step 10 is an extra, after lesson 7: it scores every change on HumanEval
-and MBPP (lesson 6), the way lesson 7 scores its span designs.
+Steps 9 to 11 are the odd ones out. They need a *trained* model, so skip them now. Step 9 comes
+after lesson 5. Steps 10 and 11 are extras, after lesson 7: step 10 scores every change on
+HumanEval and MBPP (lesson 6), the way lesson 7 scores its span designs, and step 11 takes the
+one change that won apart.
 That's where it gets fun: you stop asking what attention computes and start asking
 what your model actually does with it. Spoiler: not what the diagrams say.
 
