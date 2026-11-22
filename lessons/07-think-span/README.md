@@ -446,19 +446,39 @@ row in a table, and you only really know it once you've watched it lose on your 
 Most people will skip this, and that's fine. Each run has its prediction, its commands and its
 result in [the lab notebook](lab-notebook.md).
 
-| variation | the idea | what it did | time on an M2 | where |
-|---|---|---|---|---|
-| `plan` | write a plan of the code first | **fail**: 53.5 nats, HumanEval 1, MBPP 34 | about 2½ hours | below |
-| `shared`, `skeleton` | write the tokens the prompt already has, then the control flow | **fail** at the screen | about 25 minutes each | [step 5](lab-notebook.md#step-5-the-screen) |
-| `sig` | write the signature first | won the screen, then **fail** at 3 epochs: 41.7, 2, 53 | about 2½ hours | [step 6](lab-notebook.md#step-6-check-the-winner) |
-| `c2f1` | the outline, then the fills | **fail**: 39.1, 2, 47 | about 2½ hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
-| `lat8` | 8 vectors instead of words | **fail**: 94.4, 0, 0 | about 3 hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
-| `pause4` | four fixed tokens to compute in | **underperform**: 38.7, 8, 49, a tie | about 3 hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
-| `psig` | the signature, for free | **underperform**: 38.9, 8, 53, a tie | about 3 hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
-| `retr` | a neighbour's code, for free | **underperform**: 38.8, 12, 46, a tie | about 3½ hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+Each row gives you a tip, not the result. Write your prediction, run it, find out why it loses.
+Our numbers are folded under the table: open them after, not before. Failing on your own teaches
+you more than reading that we did.
 
-`none` is 38.5 nats, HumanEval 8, MBPP 49. `psig` and `retr` are the two halves of `psr`: neither
-won alone. The same treatment for the attention, seven changes to the model itself, is
+| variation | the idea | tip | time on an M2 | where |
+|---|---|---|---|---|
+| `plan` | write a plan of the code first | put the span's cost next to what it saves on the answer | about 2½ hours | below |
+| `shared`, `skeleton` | write the tokens the prompt already has, then the control flow | count how much of the span is copied and how much the model has to invent | about 25 minutes each | [step 5](lab-notebook.md#step-5-the-screen) |
+| `sig` | write the signature first | it wins at half an epoch. Does it still win at 3? On HumanEval, read the names it writes | about 2½ hours | [step 6](lab-notebook.md#step-6-check-the-winner) |
+| `c2f1` | the outline, then the fills | add the two costs up and compare with writing the code top to bottom | about 2½ hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+| `lat8` | 8 vectors instead of words | ask what the vectors are built from in training, and what's there at inference | about 3 hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+| `pause4` | four fixed tokens to compute in | look at *which* tasks pass, not how many: `theog.compare --show` | about 3 hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+| `psig` | the signature, for free | a HumanEval prompt has no `assert`. Where does the name come from? | about 3 hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+| `retr` | a neighbour's code, for free | read the neighbour on the tasks it lost: does it help or mislead? | about 3½ hours | [step 7](lab-notebook.md#step-7-spans-the-model-doesnt-pay-for) |
+
+<details><summary>Our results (cost in nats / HumanEval / MBPP; <code>none</code> is 38.5 / 8 / 49)</summary>
+
+| variation | ours | verdict |
+|---|---|---|
+| `plan` | 53.5 / 1 / 34 | fail |
+| `shared`, `skeleton` | lost the screen by 28 and 34 nats | fail |
+| `sig` | 41.7 / 2 / 53 at 3 epochs | fail |
+| `c2f1` | 39.1 / 2 / 47 | fail |
+| `lat8` | 94.4 / 0 / 0 | fail |
+| `pause4` | 38.7 / 8 / 49 | underperform: a tie |
+| `psig` | 38.9 / 8 / 53 | underperform: a tie |
+| `retr` | 38.8 / 12 / 46 | underperform: a tie |
+
+`psig` and `retr` are the two halves of `psr`: neither won alone.
+
+</details>
+
+The same treatment for the attention, seven changes to the model itself, is
 [lesson 4, step 10](../04-model/10-attention-experiments.md).
 
 The `plan` run from step 3:
