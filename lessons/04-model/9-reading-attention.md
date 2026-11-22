@@ -44,8 +44,9 @@ Read it like this:
   their weight on the first token because the softmax has to put it somewhere. QK-norm (step 5)
   keeps the scores small, and the sink mostly goes away. Remember this one, it matters in step 10.
 
-Now run it on the lesson 6 models with `--think <design>`. Same tool, a different question: does
-the answer actually read the span?
+Come back to this table after lesson 6, when the span designs mean something to you. Run it on
+the lesson 6 models with `--think <design>` (or just read mine). Same tool, a different question:
+does the answer actually read the span?
 
 | model | first | prompt | span | answer |
 |---|:-:|:-:|:-:|:-:|
@@ -132,4 +133,5 @@ uv run pytest tests/test_04_attnlab.py
 
 </details>
 
-Next: [step 10, changing the attention](10-attention-experiments.md).
+Next: [lesson 6, the /think span](../06-think-span/README.md). Step 10 waits until after lesson 7:
+it scores every change on the benchmarks, and lesson 7 is where you build the harness.

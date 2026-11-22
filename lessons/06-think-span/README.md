@@ -370,7 +370,7 @@ that you need several seeds, or longer runs.
 
 Steps 3 to 6 all hit the same wall. If the span is a function of P and C, writing it can't be
 cheaper than writing C straight away: at best the work is the same, split in two. So we tried
-six designs that get around the wall in different ways. Every run is the lesson 5 recipe, 3
+seven designs that get around the wall in different ways. Every run is the lesson 5 recipe, 3
 epochs, seed 42, scored on `final.pt`, on the same 1,000 rows as every table above. Before each
 run we wrote the prediction down (`runs/<name>/PREDICTION.md`).
 
@@ -420,8 +420,8 @@ The `--fit` list keeps the same 1,000 rows as the tables above. What we got:
 | `lat8` | 0 | 94.4 | **94.4** | 0 | 0 |
 | `psr` | 0 | 40.0 | **40.0** | 14 | 56 |
 
-None of them beats the empty span on cost. The four token designs land within 0.6 nats of `none`, inside
-the seed noise: a second seed of `none` scores 37.8, of `pause4` 38.3. What each one taught us:
+None of them beats the empty span on cost. `pause4`, `c2f1`, `psig` and `retr` land within 0.6 nats of
+`none`, inside the seed noise: a second seed of `none` scores 37.8, of `pause4` 38.3. What each one taught us:
 
 - **`pause4` changes which tasks pass, not how many.** Same score as `none` on both benchmarks, but
   only 4 HumanEval and 21 MBPP tasks pass in both runs; 28 MBPP tasks pass only with `none` and 28
