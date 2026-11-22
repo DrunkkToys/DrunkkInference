@@ -306,19 +306,31 @@ writing a word about it, I trained both again with seed 7, and wrote the bar dow
 | `psr` | 40.0 | 39.9 | 14 | 16 | 56 | 57 |
 
 Look at `none` first. Same data, same recipe, only the seed changes, and HumanEval goes from 8 to 3,
-MBPP from 49 to 58. **On the benchmarks, the seed alone moves the score by 5 and 9 tasks.** Every
-single-seed benchmark gap in this lesson smaller than that, `psig`'s +4 on MBPP and `retr`'s +4 on
-HumanEval included, is noise. I'd have bet those were small hints. They're not even that.
+MBPP from 49 to 58. Tempting to call that "the seed noise" and use it as a ruler. Don't: run the
+paired test from lesson 6 instead. Seed 42 against seed 7 splits 6 to 1 on HumanEval (p = 0.125)
+and 26 to 35 on MBPP (p = 0.31). Neither is a real difference, which is what you'd hope for the same
+recipe. The single-seed gaps earlier in this lesson get the same treatment: `psig`'s +4 on MBPP
+against `none` is a 23 to 19 split (p = 0.64), `retr`'s +4 on HumanEval a 10 to 6 split (p = 0.45).
+Not results. I'd have bet those were small hints. The test says they're coin flips.
 
-Now `psr`:
+Now `psr`, against `none` at the same seed:
+
+| `none` → `psr` | HumanEval, only `none` / only `psr` | p | MBPP, only `none` / only `psr` | p |
+|---|:-:|:-:|:-:|:-:|
+| seed 42 | 3 / 9 | 0.146 | 24 / 31 | 0.42 |
+| seed 7 | 3 / 16 | 0.004 | 31 / 30 | 1.0 |
 
 - **Cost: worse at both seeds**, by 1.5 and 2.1 nats. That's real.
-- **HumanEval: better at both seeds**, by 6 and by 13. 30 of 328 against 11 of 328. That's real too.
-- **MBPP: a tie.** +7 at seed 42, −1 at seed 7. It missed my bar by one task.
+- **HumanEval: better at both seeds, and real at seed 7.** 16 to 3, and the two sets don't
+  overlap at all: every task `none` solves at seed 7, `psr` misses, and the other way round 16
+  times. At seed 42 it points the same way, 9 to 3, but not by enough on its own. And `psr` repeats
+  itself: 7 HumanEval tasks pass at both of its seeds, against 2 for `none`.
+- **MBPP: a tie.** +7 at seed 42, −1 at seed 7, and the test calls both coin flips. It missed my
+  bar by one task.
 
 So by the rule I wrote before the run, `psr` doesn't clear it. One task short, and I'm not moving the
-bar after the fact. That's the whole point of writing it first. But the HumanEval result held at two
-seeds, by more than the noise both times, and nothing else in this lesson did that.
+bar after the fact. That's the whole point of writing it first. But the HumanEval gain held at two
+seeds, passed the paired test at one of them, and nothing else in this lesson did either.
 
 ## What we conclude
 
@@ -395,8 +407,8 @@ text in it beats that at 50M is the experiment this lesson's tools let you run.
 4. At 3 epochs both span and answer get cheaper, and not by the same amount for every design. A
    design that loses at half an epoch can win at 3 if its span cost falls faster than `none`'s
    answer cost, and a winner can lose. To believe a win you need the full-cost table at 3 epochs, on
-   the same rows, at more than one seed, and a benchmark difference of several tasks in the same
-   direction (lesson 6, question 4). The lab notebook's step 6 ran the 3-epoch check for `sig`: it lost.
+   the same rows, at more than one seed, and a benchmark difference the paired test believes
+   (lesson 6, [Is B really better than A?](../06-evaluation/README.md#is-b-really-better-than-a)). The lab notebook's step 6 ran the 3-epoch check for `sig`: it lost.
 
 </details>
 

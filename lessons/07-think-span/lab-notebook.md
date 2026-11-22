@@ -48,7 +48,8 @@ What we got:
 
 **`sig` is the only design cheaper than the empty span**, by 1.9 nats per row, 2%. Every other
 design costs more in total than it saves on the answer. On MBPP all five land between 1 and 5 of
-100: at this budget that's noise (lesson 6, question 4), so the cost column is the result.
+100: even a 4 to 0 split can't pass lesson 6's paired test (p = 0.125), so the cost column is the
+result.
 
 `plan` is the interesting loser. Once its span is written, the answer is by far the cheapest (61
 nats against 94), and it passes the most MBPP tasks of the five. But the span costs 42, more than it
@@ -101,7 +102,7 @@ uv run python -m theog.evaluate --ckpt runs/think-sig/final.pt --tokenizer data/
 **At 3 epochs `sig` loses to the empty span**, by 3.2 nats per row (8%). Its span got cheap (4.8
 nats, from 10.3), but it now saves only 1.6 on the answer. It is the same pattern as `plan`: more
 training made the plain answer cheaper faster than it made span plus answer cheaper. MBPP is 4
-tasks better, inside the noise. HumanEval is 6 worse, for a reason you can read in the answers: the
+tasks better, a 30 to 26 split (p = 0.69): a coin flip. HumanEval is 6 worse, 7 to 1 (p = 0.07), for a reason you can read in the answers: the
 span is closed in 151 of 164, but its `def` line has the right name in only 58. HumanEval prompts
 are code, a `def` and a docstring, while almost every training prompt names the function in
 English, so the model copies the name badly. On MBPP the name is right in 424 of 500.
@@ -181,15 +182,15 @@ None of them beats the empty span on cost. `pause4`, `c2f1`, `psig` and `retr` l
   only with `pause4`, and the code is identical on 2 of 164 and 13 of 500. We looked for a pattern
   (task length, nesting, loops in the reference solution) and found none: near-twins like the volume
   of a cube and of a cuboid fall on opposite sides. Two runs of the same size land on different
-  tasks; that's the noise lesson 6 warns about, seen task by task.
+  tasks; that's the shakiness lesson 6's paired test is built for, seen task by task.
 - **`c2f1` reorders the work and saves nothing.** The outline costs 25.6 nats and the fills 13.5:
   writing the code in a different order costs about the same as writing it top to bottom.
 - **`psig` is the only design ahead on one benchmark and level on the other**: +4 tasks on MBPP,
   equal on HumanEval. Its first HumanEval score was 1 of 164: HumanEval prompts have no `assert`,
   so the span was `def ?` on all 164 tasks, and the model, trained to trust the span, invented a
   name (`find_elements` where the test calls `has_close_elements`). Reading the prompt's `def` line
-  instead gives the right name on 163 of 164, and the score comes back to 8. Four tasks over 500 is
-  still inside the noise.
+  instead gives the right name on 163 of 164, and the score comes back to 8. Four tasks over 500, a
+  23 to 19 split: a coin flip (p = 0.64).
 - **`retr` is the most interesting loser.** It is the only design that brings in something the
   model doesn't have, and the prediction was 30 to 36 nats. It's 38.8. On HumanEval it passes 12,
   the best score in the table, and on MBPP 46, so +1 task over 664. The neighbor helps on some
@@ -250,7 +251,8 @@ vectors held the answer, or that a small model ignores any input it can live wit
 those showed up the same way: a number that didn't fit the story.
 
 One run proves nothing. Two runs of the same design with different seeds land 0.7 nats apart on
-cost, and 5 HumanEval and 9 MBPP tasks apart on the benchmarks. A design scored alone is an
+cost, and on the benchmarks they share far fewer passes than their totals suggest: 61 MBPP tasks
+pass for only one of `none`'s two seeds. A design scored alone is an
 anecdote; seven designs on the same 1,000 rows, same seed, same scoring, are an experiment, and a
 second seed is what turns a lucky number into a result. On cost, none of them clears the noise.
 That's a result too, just not the one anybody wanted.
@@ -258,8 +260,8 @@ That's a result too, just not the one anybody wanted.
 Every dead design takes a whole family of ideas with it: text built from the code, reordering the
 code, free tokens from the prompt, vectors instead of words. Measured, not argued. That's how you
 get closer to the right answer: not by being clever, by being wrong faster. And sometimes two
-half-results point somewhere. `psig` nudged MBPP, `retr` nudged HumanEval. Both nudges turned out to be
-noise on their own. Put together as `psr`, they gave the only HumanEval win that survived a second
+half-results point somewhere. `psig` nudged MBPP, `retr` nudged HumanEval. Neither passed the paired test
+on its own. Put together as `psr`, they gave the only HumanEval win that survived a second
 seed. You only find that if you ran both, and then ran it twice.
 
 What keeps the numbers honest:

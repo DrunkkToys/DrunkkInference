@@ -227,6 +227,54 @@ Open the results file to see any answer in full:
 ```
 
 
+## Is B really better than A?
+
+Sooner or later you'll have two scores and want to call one of them better. 8 against 2. 49 against
+19. Before you do, know this: the totals are the wrong thing to compare.
+
+Two models scored on the same tasks aren't two independent samples. Most tasks pass for both or
+fail for both, and those tell you nothing about which model is better. Only the tasks that pass for
+exactly one of them do. If B is no better than A, each of those is a coin flip: heads B, tails A.
+So count them, and ask how often a fair coin gives a split at least that lopsided. That's McNemar's
+test, and the exact version is a few lines of `math.comb` in `theog/compare.py`. Plumbing, not an
+exercise: read it, it's short.
+
+```bash
+uv run python -m theog.compare results/laptop_humaneval_no_think_t0.0_*.jsonl results/laptop_humaneval_think_t0.0_*.jsonl --show
+```
+
+```text
+A 8/164  B 1/164  both 1  only A 7  only B 0  p = 0.016
+only A: HumanEval/13 HumanEval/29 HumanEval/31 HumanEval/35 HumanEval/55 HumanEval/59 HumanEval/60
+only B: -
+```
+
+Seven tasks pass only without `/think`, none only with it. Seven heads in a row is a 1 in 128
+chance, and seven of the same side, either side, is 1 in 64: p = 0.016. Below 0.05, the gap would
+rarely come from coin flips, so believe it. Above 0.05, coin flips do that often, so it isn't a
+result yet, whatever the totals say.
+
+Here are this course's own runs, each against the one before it:
+
+| A → B | HumanEval | only A / only B | p | MBPP | only A / only B | p |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| before 2.4 → 1 epoch | 1 → 2 | 1 / 2 | 1.000 | 3 → 19 | 1 / 17 | < 0.001 |
+| 1 epoch → 3 epochs | 2 → 8 | 1 / 7 | 0.070 | 19 → 49 | 8 / 38 | < 0.001 |
+
+Read the HumanEval column and get humble. 2 to 8 looks like the model got four times better, and
+the test says not proven: 7 to 1 happens 7% of the time with a fair coin. MBPP has 500 tasks, so the
+same kind of gain produces 46 discordant tasks instead of 8, and no coin does 38 to 8. That's why
+this course reads both benchmarks together. HumanEval is the famous one; MBPP is the one with enough
+tasks to say something.
+
+One rule worth remembering: with 5 discordant tasks or fewer, nothing is ever significant. Even 5
+to 0 gives p = 0.0625. You need at least 6 to 0 before a fair coin looks unlikely.
+
+The `only` lists are worth a look too. Train the same recipe twice with a different seed and the two
+models share far fewer passes than their totals suggest: on the two seeds of lesson 7's `none` run,
+23 MBPP tasks pass both times and 61 pass only once. Which tasks a small model solves is shaky.
+Whether it solves more of them is the question the test answers.
+
 ## Differences from theOG's own harness
 
 - **MBPP setup order.** A few MBPP tasks have setup code that uses the solution's classes, e.g.
@@ -262,11 +310,11 @@ Open the results file to see any answer in full:
    and the details aren't. An 8M model trained on 22M tokens has seen too little code to know which
    arithmetic goes with which words; more data and a bigger model (the full track) is what fixes
    that.
-4. Greedy decoding makes each run repeatable, but the model's choice at a near-tie can flip with any
-   small change: a retrain, a different seed, a slightly different prompt. One task out of 164 is
-   noise. Sixteen out of 500, together with a 262-answer drop in the exact failure the fix targets,
-   is not. Before believing a change, look for a difference of several tasks and a reason in the
-   failure table.
+4. Run the paired test: HumanEval splits 1 to 2 (p = 1.0), MBPP 1 to 17 (p < 0.001). Three
+   discordant tasks can never be significant, while seventeen to one almost never happens by
+   chance. And MBPP comes with a reason: a 262-answer drop in the exact failure the fix targets.
+   Before believing a change, want both: a split the test believes, and a reason in the failure
+   table.
 
 </details>
 
