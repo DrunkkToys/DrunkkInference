@@ -79,8 +79,8 @@ arguments. If one of these surprises me, good. That's the run worth having.
 |---|:-:|:-:|:-:|---|
 | `none` (lesson 5) | 38.5 | 8 | 49 | the baseline |
 | `kv2` | 38.6 | 3 | 48 | a tie, 4.7% fewer parameters. My HumanEval range (6–10) was wrong; 3 is what `none` scores at seed 7 |
-| `h8x32` | | | | running |
-| `gate` | | | | queued |
+| `h8x32` | 39.9 | 5 | 43 | worse: 1.4 nats behind, outside the noise. I said maybe a small gain. Wrong way |
+| `gate` | | | | running |
 | `kv1` | | | | queued |
 | `h2x128` | | | | queued |
 | `theta1e6` | | | | queued |
