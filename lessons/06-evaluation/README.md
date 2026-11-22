@@ -2,10 +2,15 @@
 
 **You write:** the code that pulls the answer out of the model's text, and the sandboxed test
 runner. **You get:** your model's real score on HumanEval and MBPP, and a file showing every answer
-it wrote. **Time:** about 30 minutes, plus the runs.
+it wrote. **You learn:** how to measure whether a code model is right, not just confident, and
+how to read a score without fooling yourself. **Time:** about 30 minutes, plus the runs.
 
-A lower validation loss doesn't tell you whether the code works. The only real test is to run the
-code the model writes against tests it has never seen.
+Your validation loss went down. Congratulations. Does the code work? The loss has no idea. It
+measures how well the model predicts one reference answer, token by token, and a program can be
+one token away from the reference and completely broken.
+
+The only real test is to run the code the model writes against tests it has never seen. That's
+this lesson. It's also where most small-model claims on the internet quietly fall apart.
 
 ## The benchmarks
 
@@ -52,21 +57,29 @@ def extract_code(text):
 ### Exercise 6.2: `run_tests` in `theog/evaluate.py`
 
 The model's code is untrusted. It can loop forever, call `sys.exit()`, or overwrite the function the
-tests call. Running it with `exec` inside the harness would let it break the harness, so each task
-gets its own Python process.
+tests call. Not out of malice: an 8M model doesn't plot. It's just wrong in creative ways. Running
+it with `exec` inside the harness would let it break the harness, so each task gets its own Python
+process.
 
 `_RUNNER` (written for you) is the program that runs inside it: it reads a JSON job on stdin, runs
 the code, then the setup, then each test, and prints one line `__RESULT__{"ok": ..., "why": ...}`.
 You write the side that starts it:
 
 1. `job = json.dumps({"solution": ..., "entry": ..., "tests": ..., "setup": ...})`.
-2. `subprocess.run([sys.executable, "-I", "-c", _RUNNER], input=job, capture_output=True,
-   text=True, timeout=timeout)`. `-I` is isolated mode: no environment variables, no current folder
-   on the path, so a file named `json.py` next to the code can't hijack the import.
-3. `subprocess.TimeoutExpired` means `(False, f"timeout ({timeout}s)")`.
+2. Start a fresh Python in isolated mode (`-I`: no environment variables, no current folder on the
+   path, so a file named `json.py` next to the code can't hijack the import), give it `_RUNNER` as
+   its program and the job on stdin, capture its output, and stop it after `timeout` seconds.
+3. A timeout means `(False, f"timeout ({timeout}s)")`.
 4. Find `__RESULT__(\{.*\})` in stdout and return `(ok, why)` from its JSON. If it isn't there the
    process died before printing (a segfault, `os._exit`): return
    `(False, "crashed: " + the last line of stderr)`.
+
+<details><summary>Hint: the call for step 2</summary>
+
+`subprocess.run([sys.executable, "-I", "-c", _RUNNER], input=job, capture_output=True, text=True,
+timeout=timeout)`. Too slow raises `subprocess.TimeoutExpired`.
+
+</details>
 
 ```bash
 uv run pytest tests/test_06_evaluate.py
@@ -135,6 +148,9 @@ far from that points to a harness bug.
 
 ## Score your model
 
+Before you run it, write down a guess: how many of the 500 MBPP tasks does your laptop model pass?
+You've seen it write `is_palindrome` and `fib` correctly in lesson 5. Be honest.
+
 ```bash
 uv run python -m theog.evaluate --ckpt runs/laptop/best.pt --tokenizer data/tokenizer.json --dataset humaneval --out results/
 uv run python -m theog.evaluate --ckpt runs/laptop/best.pt --tokenizer data/tokenizer.json --dataset mbpp500 --out results/
@@ -160,8 +176,10 @@ mbpp500: 49/500 passed  ->  results/laptop_mbpp500_no_think_t0.0_20261119T183447
 **These are the scores of this course's laptop run, 3 epochs:** **8/164** on HumanEval and
 **49/500** on MBPP. The same data read once scored 2/164 and 19/500 (lesson 5 explains the
 difference). An earlier one-epoch run, trained before exercise 2.4 existed, scored 1/164 and 3/500.
-Yours should land within a few tasks of ours. Don't read the score first: read
-*why* it failed. Count the reasons:
+Yours should land within a few tasks of ours. How far off was your guess? Most people guess far
+too high. Code that *looks* right is cheap.
+
+Now the important part. Don't stare at the score: read *why* it failed. Count the reasons:
 
 ```bash
 uv run python -c "

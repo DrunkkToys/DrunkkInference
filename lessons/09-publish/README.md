@@ -1,7 +1,8 @@
 # Lesson 9: publishing
 
 **You write:** your model's card. **You get:** a model other people can download, run with one
-command, and check. **Time:** about 30 minutes.
+command, and check. **You learn:** how to write claims other people can check, and why the
+honest card is the one people trust. **Time:** about 30 minutes.
 
 There's no code in this lesson. A published model is a promise: "this file does what the card
 says". This lesson is about keeping it.

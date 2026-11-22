@@ -2,8 +2,9 @@
 
 **You write:** the learning-rate schedule, the loss, the sampler, the prompt, and the generation
 loop.
-**You get:** a trained model, `runs/laptop/best.pt`, that writes Python. **Time:** about 30 minutes
-of work and about 2½ hours of training.
+**You get:** a trained model, `runs/laptop/best.pt`, that writes Python. **You learn:** how a pile
+of random numbers turns into a model that writes code, one small step downhill at a time.
+**Time:** about an hour of work and about 2½ hours of training.
 
 Training repeats four steps thousands of times:
 
@@ -16,6 +17,40 @@ Training repeats four steps thousands of times:
 The loop itself, `train()` in `theog/train.py`, is written for you: batches, gradient
 accumulation, validation, checkpoints, resuming. Read it once. You write the pieces it calls.
 
+## Step 3, without the magic
+
+"PyTorch does this for you" is true, and it's also how people end up training models they don't
+understand. So here's the whole idea on a model with one parameter. The model is `w * x`. The data
+says that for `x = 3` the answer is `6`, so the right `w` is 2. Start at 0 and walk:
+
+```python
+import torch
+w = torch.tensor(0.0, requires_grad=True)   # one parameter, starting at a bad guess
+x, y = torch.tensor(3.0), torch.tensor(6.0)  # the "data": the right answer is w = 2
+for step in range(4):
+    loss = (w * x - y) ** 2                  # how wrong are we?
+    loss.backward()                          # which way is downhill?
+    print(f"step {step}: w {w.item():.3f}  loss {loss.item():6.2f}  gradient {w.grad.item():7.2f}")
+    with torch.no_grad():
+        w -= 0.05 * w.grad                   # take a small step downhill
+    w.grad = None
+```
+
+```text
+step 0: w 0.000  loss  36.00  gradient  -36.00
+step 1: w 1.800  loss   0.36  gradient   -3.60
+step 2: w 1.980  loss   0.00  gradient   -0.36
+step 3: w 1.998  loss   0.00  gradient   -0.04
+```
+
+The **gradient** says how the loss changes if you nudge `w` up a little. It's −36: raising `w`
+lowers the loss, steeply. So step against it. The `0.05` is the **learning rate**: how far to trust
+that direction. Try `0.2` instead and watch it overshoot and blow up.
+
+That's all training is. Your model has 8.3 million `w`s instead of one, `backward()` finds all 8.3
+million gradients in one go, and the optimizer takes a smarter step than `w -= lr * grad`. Same
+walk.
+
 ## The loss
 
 ### Exercise 5.1: `loss_fn`
@@ -27,9 +62,20 @@ Averaged over every position whose label isn't `-100`.
 If the model gives the right token probability 1, the loss is 0. A uniform guess over 8,000 tokens
 gives ln 8000 ≈ 8.99. That's the first number you'll see.
 
-`F.cross_entropy(logits, labels, ignore_index=IGNORE)` does all of it, but it wants logits as
-(N, vocab) and labels as (N,), so flatten the batch and time axes first. Call `.float()` on the
-logits so the loss is computed in float32 even if the model runs in lower precision.
+`F.cross_entropy` does all of it, ignored positions included. The catch is the shapes: your logits
+are (B, T, vocab) and your labels (B, T), and it wants one flat list of positions. Compute the
+loss in float32 even if the model runs in lower precision.
+
+<details><summary>Hint</summary>
+
+`F.cross_entropy(logits, labels, ignore_index=IGNORE)` wants logits as (N, vocab) and labels as
+(N,): flatten the batch and time axes with `.reshape`. Call `.float()` on the logits.
+
+</details>
+
+```bash
+uv run pytest tests/test_05_train.py -k loss
+```
 
 <details><summary>Solution</summary>
 
@@ -39,10 +85,6 @@ def loss_fn(logits, labels):
 ```
 
 </details>
-
-```bash
-uv run pytest tests/test_05_train.py -k loss
-```
 
 The test gives the loss a uniform guess and checks ln 4, then puts a confident guess at an ignored
 position and checks that nothing changes. That's lesson 3's labels at work: the prompt is never
@@ -62,17 +104,22 @@ small and nothing happens in the time you have. And the best size changes during
 
 ### Exercise 5.2: `lr_factor`
 
-Return the multiplier of the peak learning rate at update `update` of `total`:
-
-- `update < warmup`: `update / warmup`.
-- otherwise, with `progress = (update - warmup) / max(1, total - warmup)`:
-  `0.1 + 0.9 * 0.5 * (1 + cos(pi * progress))`.
+Return the multiplier of the peak learning rate at update `update` of `total`. During warmup
+it's `update / warmup`. After that, it follows half a cosine from 1 down to 0.1. You can build that
+yourself: `cos` goes from 1 to −1 between 0 and π. How do you turn that into 1 to 0.1?
 
 ```python
 lr_factor(0, 100, 5)     # 0.0
 lr_factor(5, 100, 5)     # 1.0, the peak
 lr_factor(100, 100, 5)   # 0.1
 ```
+
+<details><summary>Hint: the formula</summary>
+
+With `progress = (update - warmup) / max(1, total - warmup)`, going from 0 to 1:
+`0.1 + 0.9 * 0.5 * (1 + cos(pi * progress))`.
+
+</details>
 
 ```bash
 uv run pytest tests/test_05_train.py -k lr_schedule
@@ -123,6 +170,9 @@ you whether what it learns carries over to new tasks.
 Your two pieces green? Lesson 4's tests too? Then start the real run. It takes 2½ hours, so you
 write the sampler and the generation loop (exercises 5.3 to 5.5, below) while it trains. Why sit
 and watch a loss curve?
+
+Before you start it, write down two guesses: the final validation loss, and the step where the
+fast drop ends. You'll check them against your log in question 1.
 
 The last test of the lesson, `-k learns`, waits for those three. It trains the tiny model on toy
 rows on the CPU and checks that the validation loss falls below 2.5 (from about 6.2), that a second
@@ -213,14 +263,22 @@ the step count for the length of the whole run. If the GPU runs out of memory, u
 
 The model gives a score to every token. Which one comes next?
 
-- `temperature 0`: the highest-scoring one (**greedy**). `int(logits.argmax())`. Always the same
-  answer for the same prompt.
-- otherwise: keep only the `top_k` highest scores (`torch.topk`), divide them by the temperature,
-  softmax, and draw one (`torch.multinomial(probs, 1)`). A temperature below 1 sharpens the
-  distribution, so at 0.2 (theOG's default) it's mostly the top token, sometimes the second. Top-k
-  makes sure a very unlikely token is never drawn.
+- `temperature 0`: the highest-scoring one (**greedy**). Always the same answer for the same
+  prompt.
+- otherwise: keep only the `top_k` highest scores, divide them by the temperature, turn them into
+  probabilities, and draw one. A temperature below 1 sharpens the distribution, so at 0.2 (theOG's
+  default) it's mostly the top token, sometimes the second. Top-k makes sure a very unlikely token
+  is never drawn.
 
-`torch.topk` gives scores *and* their positions. Return the position, as an `int`.
+Return the token's id, as an `int`. Careful: after you keep the top k, the position in your short
+list is not the token id.
+
+<details><summary>Hint: the PyTorch calls</summary>
+
+`int(logits.argmax())` for greedy. `torch.topk` gives scores *and* their positions in the full
+list; `torch.softmax(vals, -1)` and `torch.multinomial(probs, 1)` draw one of them.
+
+</details>
 
 <details><summary>Solution</summary>
 
@@ -388,7 +446,7 @@ about 0.9% of that, read three times, on a model a sixth the size.
 
 ## Going further
 
-1. Plot loss against step from your log. Where does it flatten?
+1. Plot loss against step from your log. Where does it flatten? How close were your two guesses?
 2. Why `--epochs 3` and not 1, or 10?
 3. Why is the first logged loss close to ln 8000 and not, say, 20?
 
