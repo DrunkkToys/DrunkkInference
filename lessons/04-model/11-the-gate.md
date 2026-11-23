@@ -165,22 +165,70 @@ lookup table, not a filter.
 Scale, too. They trained 1.7B and 15B models on 3.5T tokens. Yours has 8.3M parameters and sees
 about 90M tokens. What a gate learns there says little about what it learns here.
 
-What's still open:
+## Seed 7: why one run isn't enough
 
-- **Is it the seed?** One seed can't say whether the gate cancels `psr`'s HumanEval gain, or seed
-  42 was unlucky. `psr` + gate at seed 7, against `psr` at seed 7 (16 / 57), would.
-- **Which layers?** Gate only layers 1 to 5 on `psr`, leaving layer 0 plain. If the layer 0 damping
-  is what cost `psr` its HumanEval, this keeps it. My prediction: 38.9–39.6 / 11–16 / 50–58. And
-  the opposite, the gate on layer 0 only: 38.8–39.6 / 8–14 / 46–56.
+A training run has luck in it. The seed picks the starting weights and the order the batches
+arrive in. Change it, keep everything else, and the same recipe lands somewhere else. Lesson 7's
+seed check showed how far: two designs swapped places, and `psr`'s MBPP lead flipped.
 
-Neither has run. When they do, the results land here, next to those predictions.
+So a gap between two runs is the change plus luck, and with one seed each you can't tell how much
+is which. A second seed doesn't remove the luck. It shows you which parts of the result survive it.
+What moves the same way twice is a candidate for the change. What flips was luck all along.
+
+I trained the gate again at seed 7. On its own first:
+
+| | seed | cost | HumanEval | MBPP |
+|---|:-:|:-:|:-:|:-:|
+| `none` | 42 | 38.5 | 8 | 49 |
+| `gate` | 42 | 36.5 | 12 | 59 |
+| `none` | 7 | 37.8 | 3 | 58 |
+| `gate` | 7 | 36.2 | 9 | 55 |
+
+- **Cost:** 2.0 nats better, then 1.6. That survives.
+- **HumanEval:** up both times, +4 and +6, never significant (p = 0.42, then 0.11).
+- **MBPP:** +10 at seed 42, −3 at seed 7 (p = 0.80). The gain I'd have bragged about after one seed
+  was luck.
+
+Then on `psr`:
+
+| | seed | cost | HumanEval | MBPP |
+|---|:-:|:-:|:-:|:-:|
+| `psr` | 42 | 40.0 | 14 | 56 |
+| `psr` + gate | 42 | 38.7 | 8 | 48 |
+| `psr` | 7 | 39.9 | 16 | 57 |
+| `psr` + gate | 7 | 38.2 | 6 | 60 |
+
+Cost better twice, by 1.3 and 1.7. HumanEval down twice, and at seed 7 it passes the paired test:
+12 tasks only `psr` solves, 2 only `psr` + gate, p = 0.013. MBPP goes −8, then +3: luck. So "the
+gate cancels `psr`'s HumanEval gain" is no longer a seed 42 accident. It's the one benchmark result
+in this step that survived both a second seed and the paired test. Too bad it's a loss.
+
+## Which layers
+
+Seed 42 only, both on `psr`, next to the predictions I wrote before the runs:
+
+| | cost | HumanEval | MBPP | my prediction |
+|---|:-:|:-:|:-:|:-:|
+| gate on layers 1 to 5 | 39.3 | 13 | 60 | 38.9–39.6 / 11–16 / 50–58 |
+| gate on layer 0 only | 37.5 | 18 | 49 | 38.8–39.6 / 8–14 / 46–56 |
+
+Layers 1 to 5: cost and HumanEval inside my range, MBPP just above it. Against plain `psr`, nothing
+moves (p = 1.0 and 0.67). Layer 0 only: cost better than my range, and HumanEval above it. 18 is
+the best HumanEval in this step, 14 tasks to 4 against the full gate on `psr` (p = 0.031). But
+against plain `psr` it's p = 0.39, and MBPP drops to 49.
+
+So I guessed wrong about where the HumanEval loss lives. Neither half loses it on its own. Only
+the gate on all six layers does. And the MBPP drop shows up whenever layer 0 is gated (48 and 49)
+and not when it isn't (60). One seed each, so that's a lead, not a finding. I don't know why yet.
+
+And not one of these beats both of its parents on both benchmarks.
 
 ## Why it's a candidate, not a result
 
-- **One seed.** Lesson 7's seed check flipped `psr`'s MBPP lead. Nothing here has had that check.
+- **Two seeds, and only the cost survived both.** The gate's MBPP gain flipped at seed 7.
 - **The benchmarks don't pass the paired test.** Pointing right is not proven.
-- **It breaks on `psr`.** A change that really helps shouldn't hurt both benchmarks on the next
-  model over.
+- **It breaks on `psr`.** HumanEval drops at both seeds, significantly at seed 7. A change that
+  really helps shouldn't do that on the next model over.
 - **You can't ship it.** llama.cpp's `qwen3` layout has no slot for the gate, so lesson 8's export
   refuses it.
 
@@ -191,8 +239,8 @@ course that beat the baseline on cost twice.
 
 1. Count the 6,168 yourself. Then for theOG-50M (10 layers, hidden 512, 4 heads).
 2. Layer 0's gate is 0.1, and switching off its head 3 still costs +27.67. How can both be true?
-3. Write down what you predict for `gate` at seed 7: cost, HumanEval, MBPP. Then decide whether
-   that prediction is worth 2½ hours of your laptop.
+3. After seed 42 alone, the gate was +10 on MBPP. Which number from seed 7 should have stopped you
+   from writing "the gate helps MBPP"? And what would a third seed tell you that the second didn't?
 
 <details><summary>Answers</summary>
 
@@ -200,8 +248,9 @@ course that beat the baseline on cost twice.
 2. The gate scales the head's output; it doesn't decide how much that output matters. `o` can
    learn bigger weights for layer 0, so 0.1 of a big number is still a big number. And 0.1 is the
    average: on some tokens the gate opens, and switching the head off loses those too.
-3. There's no right answer. The point is to write it before you run, so the run can tell you
-   you're wrong.
+3. `none` at seed 7 scores 58 on MBPP, 9 more than at seed 42, with nothing changed but the seed.
+   That's as big as the gain. A third seed tells you how wide the luck is: with two you only know
+   the results disagree, not which one is typical.
 
 </details>
 
