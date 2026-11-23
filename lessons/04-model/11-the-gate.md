@@ -151,6 +151,20 @@ And the gate itself? At the answer tokens, layer 0 sits at 0.07–0.09 on every 
 layers 0.3–0.8. The same shape as the gate on `none`. It learned the same per-layer damping, not
 a neighbour filter. My bet was wrong: the mechanism I wanted isn't the one the model learned.
 
+Then I went back to the paper, which I should have done first. The gate comes from Qiu et al.,
+[Gated Attention for LLMs](https://arxiv.org/abs/2505.06708) (NeurIPS 2025). They credit its gain
+to two things: a non-linearity after attention, and a gate that's sparse and depends on the query,
+which removes the attention sink. Not one word about filtering a context. The bet was mine, not
+theirs.
+
+And in layer 0 the gate can't filter anything. Layer 0's input is the token's embedding and nothing
+else, so its gate is a fixed number per token id: the same `def` gets the same gate next to a good
+neighbour, a bad one, or none. Measure it: the spread for one token id across rows is 1.8e-8. A
+lookup table, not a filter.
+
+Scale, too. They trained 1.7B and 15B models on 3.5T tokens. Yours has 8.3M parameters and sees
+about 90M tokens. What a gate learns there says little about what it learns here.
+
 What's still open:
 
 - **Is it the seed?** One seed can't say whether the gate cancels `psr`'s HumanEval gain, or seed
