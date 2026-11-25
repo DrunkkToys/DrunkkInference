@@ -260,7 +260,7 @@ for theOG's research experiments, which the exported model doesn't need, so they
    space-indented, so newline-plus-indent got merged into single tokens like `ĊĠĠĠĠĠĠĠ`. On the
    laptop tokenizer, `"    if x:\n        return 1"` is 7 tokens and the tab-indented version is 9.
 2. Count with `len(tok.encode(open('theog/progress.py').read()).ids)`. On the laptop data that file
-   is 548 tokens with a 2,000 vocabulary, 454 with 8,000 and 425 with 16,000: 22% shorter, and each
+   is 636 tokens with a 2,000 vocabulary, 530 with 8,000 and 496 with 16,000: 22% shorter, and each
    extra merge helps less than the one before.
 3. Generation stops on `<|/Answer|>` (lesson 5). If text could produce that token, the model would
    learn to stop in the middle of answers that happened to contain it. Added special tokens are
