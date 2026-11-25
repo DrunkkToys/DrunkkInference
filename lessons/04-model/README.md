@@ -43,8 +43,8 @@ token ids
 | [7](7-block.md) | a block and the residual stream | `Block.forward` | `-k step7` |
 | [8](8-full-model.md) | the whole model, tied output | `TheOG.forward` | `-k step8` |
 | [9](9-reading-attention.md) | reading the attention of a trained model | nothing: run it | `test_04_attnlab.py` |
-| [10](10-attention-experiments.md) | changing the attention: GQA, heads, a gate | your prediction | `test_04_attnlab.py` |
-| [11](11-the-gate.md) | the gate: what it does inside, and with the think span | nothing: read it | — |
+| [10](10-attention-experiments.md) | after lesson 7: changing the attention block: GQA, heads, a gate | your prediction | `test_04_attnlab.py` |
+| [11](11-the-gate.md) | after lesson 7: the gate inside, with the think span, and the mistake you can see | nothing: read it | — |
 
 Run one step's tests with:
 
