@@ -201,7 +201,8 @@ uv run python -m theog.pack --rows data/rows.clean.jsonl --tokenizer data/tokeni
   "train_windows": 58052,
   "val_windows": 3140,
   "train_tokens": 21991017,
-  "val_tokens": 1181570
+  "val_tokens": 1181570,
+  "think": "none"
 }
 ```
 
