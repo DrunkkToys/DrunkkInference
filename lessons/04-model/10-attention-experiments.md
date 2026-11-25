@@ -1,8 +1,8 @@
-# Step 10: changing the attention
+# Step 10: changing the attention block
 
-**An extra, for after lesson 7.** Every change is scored on HumanEval and MBPP, so you need
-lesson 6's harness, and the method is lesson 7's. Each run is a full training, about 2½ hours on a
-laptop.
+**An extra. Do it after lesson 7, not now.** You need a trained model (lesson 5), lesson 6's
+harness to score it, and lesson 7's method to judge it. Each run is a full training, about 2½
+hours on a laptop.
 
 Every new model paper changes the attention. Fewer key/value heads. More heads. A gate. A bigger
 RoPE base. Each comes with a chart that goes up and to the right, measured on a model 1,000 times
@@ -24,6 +24,13 @@ the model after it's built, so `theog/model.py` stays exactly as you wrote it.
 | `--attn qknorm=0` | no QK-norm | no |
 | `--set heads=8,head_dim=32` | more, smaller heads (same width) | yes |
 | `--set rope_theta=1e6` | Qwen3's RoPE base instead of ours | yes |
+
+One thing before you run anything: none of these is a new kind of attention. Every head still
+scores q against k, takes the softmax under the causal mask and averages the v's. That's your
+step 3, untouched. `kv`, `heads` and `head_dim` change the sizes around it. The gate scales a
+head's output *after* the attention is done. `qknorm` and `rope_theta` change the q and k that go
+in. So "changing the attention" is what the papers call it. "Changing the attention block" is what
+it is.
 
 "No" means llama.cpp's `qwen3` layout has no slot for it, so the export refuses it instead of
 writing a model that runs wrong. A trick you can't ship is a research result, not a product.
@@ -81,7 +88,11 @@ seeds some layer ends up mostly spare (so there's room to cut).
 | `noqk` | no QK-norm | 8,342,784 | 38.8–41 / 4–8 / 40–50, or it blows up at lr 1e-3 |
 
 Success means beating the baseline by more than the seed noise on cost, or on both benchmarks by
-the paired test. A
+the paired test. That's the rule I wrote before the runs, and I'm leaving it here so you can see
+it was wrong. Lesson 7 had already shown that cost and the benchmarks disagree at this size, and
+I still put cost first. Over the 20 runs I've scored since, a lower cost predicts nothing about
+passing tests: Spearman −0.03 against HumanEval, −0.23 against MBPP. The rule to use: **both
+benchmarks, task by task, with the paired test. Cost is reported, never judged on.** A
 tie with fewer parameters (`kv2`, `kv1`) is a practical win: same model, cheaper to run. Not a
 research one.
 
@@ -103,7 +114,8 @@ arguments. If one of these surprises me, good. That's the run worth having.
 wrong.
 
 So the gate is the first change in this course to beat the baseline on cost. By the rule I wrote
-above, that's a success. At one seed. Remember what lesson 7's seed check did to `psr`'s MBPP lead?
+above, that's a success. By the right rule, it's a maybe: both benchmarks point its way, neither
+passes the paired test. At one seed. Remember what lesson 7's seed check did to `psr`'s MBPP lead?
 It flipped. Until a second seed agrees, the gate is a candidate, nothing more. It gets its own
 step: [step 11, the gate](11-the-gate.md), what it does inside and what happens when you add it to
 lesson 7's span.

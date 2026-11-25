@@ -1,11 +1,14 @@
 # Step 11: the gate
 
-**An extra, after step 10.** No new code and no new training: you read the one change in step 10
-that beat the baseline and find out what it actually did. If you trained `gate` yourself in step
+**An extra, after step 10, so after lesson 7 too.** No new code. You take the one change in step
+10 that beat the baseline and find out what it actually did. If you trained `gate` yourself in step
 10, run the commands on yours. If not, read mine.
 
 **You learn:** what an output gate on attention computes, how to look inside it, and why a result
-that points the right way on both benchmarks still isn't proven. **Time:** about 30 minutes.
+that points the right way on both benchmarks still isn't proven, and why fixing the mistake you
+can see doesn't fix the task. **Time:** about 30 minutes to read. Redoing it is five more trainings:
+the gate at seed 7 (about 2½ hours) and four on `psr`'s data (about 3½ hours each). Call it 16 hours
+of laptop, plus the benchmarks.
 
 ## Why it gets its own step
 
@@ -13,8 +16,8 @@ Every other change in step 10 is about size: fewer key/value heads, more heads, 
 They move parameters around. The gate doesn't. It adds almost nothing and changes *what flows*:
 how much of each head reaches the rest of the model, decided token by token.
 
-It's also the only change in step 10 that beat the baseline. One that wins deserves a closer look
-than a row in a table.
+It's also the only change in step 10 that beat the baseline on cost, and the only one with both
+benchmarks pointing its way. One that might win deserves a closer look than a row in a table.
 
 ## Why a small model should care
 
@@ -56,13 +59,15 @@ Same data, same seed, same recipe as the lesson 5 baseline. One change.
 | `none` (lesson 5) | 38.5 | 8 | 49 |
 | `gate` | 36.5 | 12 | 59 |
 
-Cost first: 2.0 nats better, and the seed noise is 0.7. That's real at one seed.
-
-The benchmarks, task by task with the paired test (lesson 6): HumanEval 9 tasks only `gate`
+The benchmarks first, task by task with the paired test (lesson 6): HumanEval 9 tasks only `gate`
 solves, 5 only `none` solves, p = 0.42. MBPP 29 to 19, p = 0.19. Neither is significant.
 
-But read them together. Both point the same way as the cost. Nothing breaks the pattern. That's
-a candidate, not noise and not a result. My prediction was "a tie, nothing to fix". Wrong, the
+But read them together. Both point the same way. Nothing breaks the pattern. That's a candidate,
+not noise and not a result.
+
+The cost: 2.0 nats better, and the seed noise is 0.7. Real at one seed, and it tells you the gated
+model predicts the reference solutions better. Lesson 7 already showed that's not the same thing as
+passing more tests. Keep that in mind: it comes back. My prediction was "a tie, nothing to fix". Wrong, the
 good way.
 
 ## What it did inside
@@ -184,7 +189,7 @@ I trained the gate again at seed 7. On its own first:
 | `none` | 7 | 37.8 | 3 | 58 |
 | `gate` | 7 | 36.2 | 9 | 55 |
 
-- **Cost:** 2.0 nats better, then 1.6. That survives.
+- **Cost:** 2.0 nats better, then 1.6. That survives. Wait for the `psr` table before you get excited.
 - **HumanEval:** up both times, +4 and +6, never significant (p = 0.42, then 0.11).
 - **MBPP:** +10 at seed 42, −3 at seed 7 (p = 0.80). The gain I'd have bragged about after one seed
   was luck.
@@ -202,6 +207,9 @@ Cost better twice, by 1.3 and 1.7. HumanEval down twice, and at seed 7 it passes
 12 tasks only `psr` solves, 2 only `psr` + gate, p = 0.013. MBPP goes −8, then +3: luck. So "the
 gate cancels `psr`'s HumanEval gain" is no longer a seed 42 accident. It's the one benchmark result
 in this step that survived both a second seed and the paired test. Too bad it's a loss.
+
+Now look at the cost column again: better at both seeds. Cost up, HumanEval down, twice, and once
+significantly. That's lesson 7's warning in one table.
 
 ## Which layers
 
@@ -223,6 +231,47 @@ and not when it isn't (60). One seed each, so that's a lead, not a finding. I do
 
 And not one of these beats both of its parents on both benchmarks.
 
+## The mistake you can see
+
+Forget the gate for a minute and read the failures themselves. Open `psr`'s MBPP answers.
+
+103 of the 500 never define the function the test calls. 99 at seed 7. That survives the seed.
+And in 98 of the 103, the right name is sitting in the span, a few lines up: the signature `psr`
+copied from the prompt. The model reads it and still writes something else. The test wants
+`find_Volume` and gets `def find_V None(`. It wants `is_woodall` and gets `def is_w index(`.
+
+Look at how the tokenizer cuts those names (lesson 1): `find`, `_`, `V`, `olume`. `is`, `_`, `w`,
+`ood`, `all`. Rare pieces. After `find_`, everything the model learned says "something common
+comes next", and the habit beats the name it can see.
+
+Free points, right? A name error is the dumbest way to fail. So I added a copy head: a pointer on
+top of the model ([See et al., 2017](https://arxiv.org/abs/1704.04368)) that can point at an
+earlier token and say "that one, again", with a learned switch per token between copying and
+predicting as usual. 33k parameters. It's in my lab, not in the course's `attnlab.py`, and
+llama.cpp couldn't run it anyway.
+
+The prediction, written before the run: the names get fixed, and most of those tasks pass. MBPP
+up by about 14.
+
+| | broken names (MBPP) | HumanEval | MBPP |
+|---|:-:|:-:|:-:|
+| `psr` | 103 | 14 | 56 |
+| `psr` + copy head | 2 | 13 | 47 |
+
+The names: fixed, 103 down to 2. MBPP: down, 56 to 47. Of the 103 tasks it fixed the name on, 10
+pass. The other 93 now fail the honest way: right name, wrong answer.
+
+And the answers with the right name got worse. `psr` passes 14.1% of them, the copy head 9.4%. It
+didn't stop at names: it copied whole chunks of the pasted neighbour, a *different* task, into the
+answer. Answers at least 60% the same as the neighbour's code went from 112 to 142. So I blocked it
+from copying the neighbour (it could still read it): names 3, MBPP 47 again. Same story.
+
+My prediction was wrong by 23 tasks. Here's why, and it's the most useful thing in this step: the
+broken name wasn't the reason those 103 tasks failed. It was the *first* reason. Behind it was a
+wrong answer, and a loud error was hiding a quiet one. Fixing the error you can see doesn't fix
+the task. Before you fix a failure, ask what the answer would score with the failure gone. Here,
+mostly zero.
+
 ## Why it's a candidate, not a result
 
 - **Two seeds, and only the cost survived both.** The gate's MBPP gain flipped at seed 7.
@@ -232,8 +281,11 @@ And not one of these beats both of its parents on both benchmarks.
 - **You can't ship it.** llama.cpp's `qwen3` layout has no slot for the gate, so lesson 8's export
   refuses it.
 
-Four reasons to keep it in the drawer. One reason to keep looking: it's the only change in this
-course that beat the baseline on cost twice.
+Four reasons to keep it in the drawer. And the one I kept looking for, "it beat the baseline on
+cost twice", isn't a reason at all. On `psr` it beat it on cost twice too, and lost HumanEval twice.
+Over the 20 runs I've scored, a better cost predicts nothing about passing tests: Spearman −0.03
+against HumanEval, −0.23 against MBPP. If there's a reason to keep looking, it's HumanEval on
+`none`: up at both seeds, +4 and +6, never significant.
 
 ## Try it
 
@@ -241,6 +293,8 @@ course that beat the baseline on cost twice.
 2. Layer 0's gate is 0.1, and switching off its head 3 still costs +27.67. How can both be true?
 3. After seed 42 alone, the gate was +10 on MBPP. Which number from seed 7 should have stopped you
    from writing "the gate helps MBPP"? And what would a third seed tell you that the second didn't?
+4. Pick 10 of your own model's failing MBPP answers. For each, fix the first error by hand and run
+   the test again. How many pass now? Write your guess down before you start.
 
 <details><summary>Answers</summary>
 
@@ -251,6 +305,9 @@ course that beat the baseline on cost twice.
 3. `none` at seed 7 scores 58 on MBPP, 9 more than at seed 42, with nothing changed but the seed.
    That's as big as the gain. A third seed tells you how wide the luck is: with two you only know
    the results disagree, not which one is typical.
+4. Mine: the copy head did it for 103 tasks and 10 passed. If yours is much higher, your model's
+   errors really are shallow, and a fix like the copy head is worth a run. If it's near mine, the
+   first error is a symptom.
 
 </details>
 
