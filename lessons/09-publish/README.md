@@ -129,6 +129,8 @@ its steps, measured in lesson 6:
   at a third seed. Two seeds said HumanEval, the MBPP bar said no. Who's right?
 - **The attention** (lesson 4, step 10): the three changes I never ran, or [the gate](../04-model/11-the-gate.md) on
   layer 0 only, step 11's best HumanEval at one seed. One seed is an anecdote.
+- **Both together** (lesson 4, step 12): two models as one cleared both benchmarks at three seeds.
+  One model that does the same is still open. Distillation didn't do it. What would?
 
 Change one thing at a time, and score both benchmarks every time. That's the whole method.
 

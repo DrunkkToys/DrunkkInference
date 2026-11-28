@@ -146,4 +146,4 @@ uv run pytest tests/test_04_attnlab.py
 
 </details>
 
-Next: [step 11, the gate](11-the-gate.md). Then [lesson 8, export](../08-export/README.md).
+Next: [step 11, the gate](11-the-gate.md), then [step 12](12-think-and-attention.md). Then [lesson 8, export](../08-export/README.md).

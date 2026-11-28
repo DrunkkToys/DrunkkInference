@@ -479,7 +479,9 @@ you more than reading that we did.
 </details>
 
 The same treatment for the attention, seven changes to the model itself, is
-[lesson 4, step 10](../04-model/10-attention-experiments.md).
+[lesson 4, step 10](../04-model/10-attention-experiments.md). The span and the attention together,
+the first thing in this course to clear both benchmarks at three seeds, is
+[step 12](../04-model/12-think-and-attention.md).
 
 The `plan` run from step 3:
 

@@ -75,3 +75,26 @@ def test_attention_maps_are_causal_distributions(spec):
         assert p.shape == (cfg.heads, 12, 12)
         assert torch.allclose(p.sum(-1), torch.ones(cfg.heads, 12), atol=1e-5)
         assert p.triu(1).abs().max() == 0  # nothing looks ahead
+
+
+def test_gatemask_gates_only_the_set_layers():
+    cfg = replace(tiny(), heads=4, head_dim=16, layers=3)
+    m = TheOG(cfg)
+    attnlab.apply(m, {"gate": 1, "gatemask": 1})
+    assert [b.attn.gate is not None for b in m.blocks] == [True, False, False]
+    attnlab.apply(m, {"gate": 1, "gatemask": 6})
+    assert [b.attn.gate is not None for b in m.blocks] == [False, True, True]
+
+
+def test_ensemble_is_the_mean_of_log_probabilities():
+    from theog.evaluate import ensemble
+    cfg = replace(tiny(), heads=4, head_dim=16)
+    torch.manual_seed(0); a = TheOG(cfg).eval()
+    torch.manual_seed(1); b = TheOG(cfg).eval()
+    ids = torch.randint(0, cfg.vocab_size, (1, 8))
+    with torch.no_grad():
+        both, self_ = ensemble(a, b)(ids), ensemble(a, a)(ids)
+        la, lb = torch.log_softmax(a(ids), -1), torch.log_softmax(b(ids), -1)
+    assert torch.allclose(both, (la + lb) / 2, atol=1e-5)
+    assert torch.allclose(self_, la, atol=1e-5)  # a model with itself is the model
+    assert ensemble(a, b).cfg is a.cfg
