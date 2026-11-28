@@ -2,6 +2,8 @@
 
   uv run python -m theog.evaluate --ckpt runs/theog-50m/best.pt --tokenizer data/tokenizer.json \
       --dataset humaneval --out results/
+  uv run python -m theog.evaluate --ckpt runs/a/final.pt --ensemble runs/b/final.pt --tokenizer data/tokenizer.json \
+      --design psr --dataset humaneval --out results/      # two models as one (lesson 4, step 12)
   uv run --extra sanity python -m theog.evaluate --hf Salesforce/codegen-350M-mono --dataset humaneval --out results/
 
 A task passes when the generated code and the task's own tests run clean in a
@@ -112,6 +114,23 @@ def prefilled(model, tok, task, prefill, think, temperature, top_k, max_new):
     return tok.decode(out, skip_special_tokens=False)
 
 
+def ensemble(a, b):
+    """Two models as one (lesson 4, step 12). At every step the next-token scores are the mean of
+    the two models' log-probabilities: a geometric mean of their distributions. Greedy decoding
+    picks the token both models like best together. Same tokenizer, same window."""
+    import torch
+
+    class Ensemble(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.a, self.b, self.cfg = a, b, a.cfg
+
+        def forward(self, ids):
+            return 0.5 * (torch.log_softmax(self.a(ids).float(), -1) + torch.log_softmax(self.b(ids).float(), -1))
+
+    return Ensemble().eval()
+
+
 class TheOGSolver:
     """theOG in its chat format: the task goes in the user turn."""
 
@@ -189,6 +208,7 @@ def main() -> None:
     who = ap.add_mutually_exclusive_group(required=True)
     who.add_argument("--ckpt", type=Path)
     who.add_argument("--hf", help="a Hugging Face model id, for the sanity gate")
+    ap.add_argument("--ensemble", type=Path, help="a second checkpoint: decode from both models' mean log-probabilities")
     ap.add_argument("--tokenizer", type=Path)
     ap.add_argument("--dataset", choices=["humaneval", "mbpp500"], required=True)
     ap.add_argument("--out", type=Path, required=True)
@@ -202,12 +222,18 @@ def main() -> None:
     a = ap.parse_args()
     if a.ckpt and not a.tokenizer:
         ap.error("--ckpt needs --tokenizer")
+    if a.ensemble and not a.ckpt:
+        ap.error("--ensemble needs --ckpt")
     if a.hf and (a.think or a.temperature):
         ap.error("--hf scores greedy plain completion: --think and --temperature don't apply to it")
 
     tasks = load_tasks(a.dataset)[: a.limit or None]
     if a.ckpt:
         solver, name = TheOGSolver(a.ckpt, a.tokenizer, a.think, a.temperature, a.top_k, a.max_new, a.design), a.ckpt.parent.name
+        if a.ensemble:
+            from theog.train import load_model, pick_device
+            solver.model = ensemble(solver.model, load_model(a.ensemble, pick_device()))
+            name = f"{name}+{a.ensemble.parent.name}"
     else:
         solver, name = HFSolver(a.hf, a.max_new), a.hf.replace("/", "__")
     mode = (a.design or ("think" if a.think else "no_think"))

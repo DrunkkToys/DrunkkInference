@@ -311,5 +311,6 @@ against HumanEval, −0.23 against MBPP. If there's a reason to keep looking, it
 
 </details>
 
-Next: [lesson 8, export](../08-export/README.md). The best result in step 10 is the one the
-export refuses. Find out why.
+Next: [step 12, think and attention together](12-think-and-attention.md), where the seesaw
+finally breaks. Then [lesson 8, export](../08-export/README.md). The best result in step 10 is the
+one the export refuses. Find out why.
