@@ -45,6 +45,7 @@ token ids
 | [9](9-reading-attention.md) | reading the attention of a trained model | nothing: run it | `test_04_attnlab.py` |
 | [10](10-attention-experiments.md) | after lesson 7: changing the attention block: GQA, heads, a gate | your prediction | `test_04_attnlab.py` |
 | [11](11-the-gate.md) | after lesson 7: the gate inside, with the think span, and the mistake you can see | nothing: read it | — |
+| [12](12-think-and-attention.md) | after step 11: the think span and the gate together, two models as one | your prediction | `test_04_attnlab.py` |
 
 Run one step's tests with:
 
@@ -62,10 +63,10 @@ it. The calls are easy to look up; knowing which ones you need is the part that 
 
 Do the steps in order. Each test only uses the steps before it.
 
-Steps 9 to 11 are the odd ones out. They need a *trained* model, so skip them now. Step 9 comes
-after lesson 5. Steps 10 and 11 are extras, after lesson 7: step 10 scores every change on
-HumanEval and MBPP (lesson 6), the way lesson 7 scores its span designs, and step 11 takes the
-one change that won apart.
+Steps 9 to 12 are the odd ones out. They need a *trained* model, so skip them now. Step 9 comes
+after lesson 5. Steps 10 to 12 are extras, after lesson 7: step 10 scores every change on
+HumanEval and MBPP (lesson 6), the way lesson 7 scores its span designs, step 11 takes the
+one change that won apart, and step 12 puts it together with the think span.
 That's where it gets fun: you stop asking what attention computes and start asking
 what your model actually does with it. Spoiler: not what the diagrams say.
 

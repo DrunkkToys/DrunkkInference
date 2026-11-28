@@ -8,6 +8,7 @@ spec keys (anything left out is lesson 4's attention):
   gate=1     a sigmoid gate per head on the attention output, read from the block input
              (Qiu et al., 2025, "Gated Attention for Large Language Models"). Not in qwen3.
   qknorm=0   no QK-norm. Not in qwen3.
+  gatemask=M with gate=1: gate only the layers whose bit is set in M (1 = layer 0 only, 62 = layers 1 to 5).
 
 Head count, head size and the RoPE base are plain config fields: `theog.train --set heads=8,head_dim=32`.
 """
@@ -60,8 +61,12 @@ class LabAttention(nn.Module):
 
 
 def apply(model, spec: dict) -> None:
-    for b in model.blocks:
-        b.attn = LabAttention(model.cfg, spec).to(model.embed.weight.device)
+    mask = spec.get("gatemask")
+    for i, b in enumerate(model.blocks):
+        s = dict(spec)
+        if mask is not None:  # bit i set: layer i keeps its gate
+            s["gate"] = spec.get("gate", 0) and (mask >> i) & 1
+        b.attn = LabAttention(model.cfg, s).to(model.embed.weight.device)
     model.attn_spec = dict(spec)
 
 
