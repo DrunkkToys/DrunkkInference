@@ -127,11 +127,13 @@ its steps, measured in lesson 6:
 - **Better data** (lesson 2): a new cleaning rule, a tighter skeleton cap.
 - **The think span** (lesson 7): a design of your own, scored by its total cost in nats, or `psr`
   at a third seed. Two seeds said HumanEval, the MBPP bar said no. Who's right?
-- **The attention** (lesson 4, step 10): the three changes I never ran, or [the gate](../04-model/11-the-gate.md) on
-  layer 0 only, step 11's best HumanEval at one seed. One seed is an anecdote.
-- **Both together** (lesson 4, step 12): two models as one cleared both benchmarks at three seeds.
+- **The attention** ([lesson 10](../10-attention/README.md)): the three changes I never ran, or [the gate](../10-attention/2-the-gate.md) on
+  layer 0 only, step 2's best HumanEval at one seed. One seed is an anecdote.
+- **Both together** ([lesson 10, step 3](../10-attention/3-think-and-attention.md)): two models as one cleared both benchmarks at three seeds.
   One model that does the same is still open. Distillation didn't do it. What would?
 
 Change one thing at a time, and score both benchmarks every time. That's the whole method.
 
-Back to the [start](../../README.md).
+Want one more? [Lesson 10](../10-attention/README.md) changes the attention, the part every
+paper changes, and scores it the way lesson 7 scored the span. Or back to the
+[start](../../README.md).

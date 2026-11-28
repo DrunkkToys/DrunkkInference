@@ -1,8 +1,8 @@
-# Step 11: the gate
+# Step 2: the gate
 
-**An extra, after step 10, so after lesson 7 too.** No new code. You take the one change in step
-10 that beat the baseline and find out what it actually did. If you trained `gate` yourself in step
-10, run the commands on yours. If not, read mine.
+**After step 1.** No new code. You take the one change in step
+1 that beat the baseline and find out what it actually did. If you trained `gate` yourself in step
+1, run the commands on yours. If not, read mine.
 
 **You learn:** what an output gate on attention computes, how to look inside it, and why a result
 that points the right way on both benchmarks still isn't proven, and why fixing the mistake you
@@ -12,11 +12,11 @@ of laptop, plus the benchmarks.
 
 ## Why it gets its own step
 
-Every other change in step 10 is about size: fewer key/value heads, more heads, smaller heads.
+Every other change in step 1 is about size: fewer key/value heads, more heads, smaller heads.
 They move parameters around. The gate doesn't. It adds almost nothing and changes *what flows*:
 how much of each head reaches the rest of the model, decided token by token.
 
-It's also the only change in step 10 that beat the baseline on cost, and the only one with both
+It's also the only change in step 1 that beat the baseline on cost, and the only one with both
 benchmarks pointing its way. One that might win deserves a closer look than a row in a table.
 
 ## Why a small model should care
@@ -24,7 +24,7 @@ benchmarks pointing its way. One that might win deserves a closer look than a ro
 A big model can afford waste. It has dozens of layers, a head that does nothing is a rounding
 error, and if one head carries too much, another learns to back it up.
 
-Yours has 6 layers and 24 heads. Step 9 showed what that means: one head in layer 0 held the
+Yours has 6 layers and 24 heads. Lesson 4 step 9 showed what that means: one head in layer 0 held the
 whole model up, and some layer ended up nearly spare. No room for waste, and no backup.
 
 The gate is cheap capacity. 0.07% more parameters, and the model gets a way to turn a head down
@@ -73,7 +73,7 @@ good way.
 ## What it did inside
 
 Here's the part the paper chart doesn't show you. Run the mean gate value over the answer
-tokens of the same 100 rows step 9 uses:
+tokens of the same 100 rows lesson 4 step 9 uses:
 
 | layer | h0 | h1 | h2 | h3 |
 |---|:-:|:-:|:-:|:-:|
@@ -87,7 +87,7 @@ tokens of the same 100 rows step 9 uses:
 Layer 0 is nearly shut: about 0.1 on every head, and below 0.1 on more than half of the answer
 tokens. Every other layer sits around half open.
 
-Now remember step 9. In the baseline, layer 0 *was* the model: switch off head 3 and the cost went
+Now remember lesson 4 step 9. In the baseline, layer 0 *was* the model: switch off head 3 and the cost went
 up by +138 nats. So did the gate turn off the most important layer? Run the head table on `gate`:
 
 | layer | h0 | h1 | h2 | h3 |
@@ -108,7 +108,7 @@ be bigger and make up the difference. What the gate gives the model is a per-tok
 turn layer 0 down most of the time, up when the token needs it. That's my reading. It fits both
 tables. It's one seed.
 
-Two more things from step 9's `mass` table, `none` against `gate`:
+Two more things from lesson 4 step 9's `mass` table, `none` against `gate`:
 
 - **The sink.** Position 0 gets 1.0% in `none` and 0.3% in `gate`. My prediction said the gate had
   nothing to fix because the sink was already small. It shrank anyway, but 0.7% of attention
@@ -311,6 +311,6 @@ against HumanEval, −0.23 against MBPP. If there's a reason to keep looking, it
 
 </details>
 
-Next: [step 12, think and attention together](12-think-and-attention.md), where the seesaw
-finally breaks. Then [lesson 8, export](../08-export/README.md). The best result in step 10 is the
-one the export refuses. Find out why.
+Next: [step 3, think and attention together](3-think-and-attention.md), where the seesaw
+finally breaks. And one for you: the best result in step 1 is the one lesson 8's export refuses.
+Find out why.

@@ -55,12 +55,13 @@ Hugging Face datasets ─► rows.jsonl ─► tokenizer.json ─► packed wind
 | 1 | BPE by hand, then the real tokenizer | `theog/tokenizer.py` |
 | 2 | the cleaning rules, dedup, naming the function, the contamination check | `theog/data.py`, `theog/contamination.py` |
 | 3 | one training sequence with its labels, and the packer | `theog/format.py`, `theog/pack.py` |
-| 4 | the transformer, in 8 steps, plus 4 you come back for once you have a trained model | `theog/model.py` |
+| 4 | the transformer, in 8 steps, plus one you come back for once you have a trained model | `theog/model.py` |
 | 5 | the learning-rate schedule, the loss, the sampler, the prompt, generation | `theog/train.py`, `theog/format.py`, `theog/generate.py` |
 | 6 | answer extraction and the sandboxed test runner | `theog/generate.py`, `theog/evaluate.py` |
 | 7 | which tokens the prompt grounds, what a think span costs, and an experiment | `theog/think.py`, `theog/cost.py` |
 | 8 | the weight mapping for GGUF, the Ollama Modelfile | `theog/export.py` |
 | 9 | your model card and release | — |
+| 10 | an extra, after the course: changes to the attention, scored like lesson 7's spans | `theog/attnlab.py` (written for you) |
 
 ## Setup
 

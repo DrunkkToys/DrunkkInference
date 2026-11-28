@@ -1,6 +1,6 @@
-# Step 12: think and attention, together
+# Step 3: think and attention, together
 
-**An extra, after step 11.** Lesson 7 gave you the think span, `psr`. Steps 10 and 11 gave you the
+**After step 2.** Lesson 7 gave you the think span, `psr`. Steps 1 and 2 gave you the
 gate. This step puts them together, and it's the first time in this course that something clears
 both bars, HumanEval and MBPP, at three seeds out of three.
 
@@ -16,7 +16,7 @@ Lesson 7's `psr` at seed 42 scores 14 HumanEval and 56 MBPP. The bar for this st
 on HumanEval and more than 59 on MBPP, in the same run. Above every single run we had on one, and
 not below on the other.
 
-Step 11 ended with this line: *not one of these beats both of its parents on both benchmarks.* So
+Step 2 ended with this line: *not one of these beats both of its parents on both benchmarks.* So
 I kept going.
 
 ## The seesaw
@@ -30,7 +30,7 @@ Here are the runs that came closest, one model each:
 | `psr` + gate on layers 1 to 5 | 13 | 60 |
 | `psr` | 14 | 56 |
 
-Every time one goes up, the other goes down. You saw it in step 11. You'll see it in your own runs.
+Every time one goes up, the other goes down. You saw it in step 2. You'll see it in your own runs.
 After a while it stops looking like luck.
 
 Task counts hide it, though. A HumanEval task passes only if about 7 hidden asserts all pass. An
@@ -136,7 +136,7 @@ my lab, not in the course code.
 - **It's two models.** 16.7M parameters at inference, twice the compute per token. Two 8M models
   beat one 8M model. Whether they beat one 16M model is a run nobody's done yet.
 - **Lesson 8 exports one model.** Ollama runs one GGUF. And the gate has no slot in llama.cpp's
-  `qwen3` layout anyway (step 11).
+  `qwen3` layout anyway (step 2).
 
 It's a result about *room*, not a product. The seesaw isn't a law of small models. It's what
 happens when one set of weights has to cover two styles of task.
@@ -193,5 +193,6 @@ both benchmarks.
 
 </details>
 
-Next: [lesson 8, export](../08-export/README.md), and what it can and can't take from steps 10 to
-12.
+That's the course. What's still open, including one model that does what this pair does, is in
+[lesson 9's last section](../09-publish/README.md#where-to-go-from-here). Back to the
+[start](../../README.md).

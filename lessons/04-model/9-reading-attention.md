@@ -45,7 +45,7 @@ Read it like this:
   model I checked has one, including the same model trained with another seed (83%).
 - **Position 0 gets 1%.** Big models are famous for an *attention sink*: heads that dump half
   their weight on the first token because the softmax has to put it somewhere. QK-norm (step 5)
-  keeps the scores small, and the sink mostly goes away. Remember this one, it matters in step 10.
+  keeps the scores small, and the sink mostly goes away. Remember this one, it matters in lesson 10.
 
 Come back to this table after lesson 7, when the span designs mean something to you. Run it on
 the lesson 7 models with `--think <design>` (or just read mine). Same tool, a different question:
@@ -110,7 +110,7 @@ picks which". Very different sentences. Only one of them is true.
 And even that's not a licence to cut. Zeroing one head at a time misses heads that back each
 other up, and a model trained without them would arrange itself differently. This table tells you
 where to *look*, not what to cut. The only way to know is to train the changed model and score it.
-That is step 10.
+That is [lesson 10](../10-attention/README.md).
 
 ## Try it
 
@@ -136,5 +136,6 @@ uv run pytest tests/test_04_attnlab.py
 
 </details>
 
-Next: [lesson 6, evaluation](../06-evaluation/README.md). Step 10 waits until after lesson 7:
-it scores every change with lesson 6's harness and lesson 7's method.
+Next: [lesson 6, evaluation](../06-evaluation/README.md). Changing the attention waits for
+[lesson 10](../10-attention/README.md): it scores every change with lesson 6's harness and lesson 7's
+method.
