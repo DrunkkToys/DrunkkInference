@@ -1,6 +1,6 @@
-# Step 10: changing the attention block
+# Step 1: changing the attention block
 
-**An extra. Do it after lesson 7, not now.** You need a trained model (lesson 5), lesson 6's
+You need a trained model (lesson 5), lesson 6's
 harness to score it, and lesson 7's method to judge it. Each run is a full training, about 2½
 hours on a laptop.
 
@@ -14,7 +14,7 @@ same data, seed and recipe, and let the log decide.
 
 ## The tool
 
-`theog/attnlab.py` has `LabAttention`: your step 5 attention, plus three switches. It swaps into
+`theog/attnlab.py` has `LabAttention`: your attention from lesson 4 step 5, plus three switches. It swaps into
 the model after it's built, so `theog/model.py` stays exactly as you wrote it.
 
 | switch | what it does | exports to Ollama (lesson 8)? |
@@ -27,7 +27,7 @@ the model after it's built, so `theog/model.py` stays exactly as you wrote it.
 
 One thing before you run anything: none of these is a new kind of attention. Every head still
 scores q against k, takes the softmax under the causal mask and averages the v's. That's your
-step 3, untouched. `kv`, `heads` and `head_dim` change the sizes around it. The gate scales a
+lesson 4 step 3, untouched. `kv`, `heads` and `head_dim` change the sizes around it. The gate scales a
 head's output *after* the attention is done. `qknorm` and `rope_theta` change the q and k that go
 in. So "changing the attention" is what the papers call it. "Changing the attention block" is what
 it is.
@@ -42,7 +42,7 @@ uv run python -m theog.train --packed data/packed --out runs/attn_kv2 --preset l
 ```
 
 Then score it like any lesson 7 design: `theog.cost` on the same 1,000 rows, HumanEval and MBPP in
-no-think mode, and the two step 9 diagnostics. The baseline is the lesson 5 model: cost 38.5 nats
+no-think mode, and the two diagnostics of lesson 4 step 9. The baseline is the lesson 5 model: cost 38.5 nats
 per row, HumanEval 8/164, MBPP 49/500. Seed noise on the cost is 0.7 nats. On the benchmarks, don't
 use a ruler: compare each run with the baseline task by task, with the paired test
 (lesson 6, [Is B really better than A?](../06-evaluation/README.md#is-b-really-better-than-a)). A split it doesn't believe is a tie.
@@ -62,7 +62,7 @@ uv run python -m theog.attnlab heads --ckpt runs/attn_kv2/final.pt
 
 ## Why GQA saves anything
 
-Look at step 5. Every head has its own k and v. At generation time you keep every past token's k
+Look at lesson 4 step 5. Every head has its own k and v. At generation time you keep every past token's k
 and v around: the **KV cache**. Share each k/v head between 2 query heads and the cache halves.
 Each block also drops 4 of the 8 `hidden × head_dim` slices of k and v: 65,536 parameters per block,
 393,216 in all. Big models do this because the KV cache, not the weights, is what runs out of
@@ -73,7 +73,7 @@ v. Query heads 0 and 1 read k/v head 0, heads 2 and 3 read head 1.
 
 ## The predictions (written before any run)
 
-Seven runs, one change each, seed 42. Step 9 told us a few things first: the sink is 1% (so the
+Seven runs, one change each, seed 42. Lesson 4 step 9 told us a few things first: the sink is 1% (so the
 gate has little to fix), layer 0 uses all 4 of its heads (so 2 heads should hurt), and in both
 seeds some layer ends up mostly spare (so there's room to cut).
 
@@ -117,7 +117,7 @@ So the gate is the first change in this course to beat the baseline on cost. By 
 above, that's a success. By the right rule, it's a maybe: both benchmarks point its way, neither
 passes the paired test. At one seed. Remember what lesson 7's seed check did to `psr`'s MBPP lead?
 It flipped. Until a second seed agrees, the gate is a candidate, nothing more. It gets its own
-step: [step 11, the gate](11-the-gate.md), what it does inside and what happens when you add it to
+step: [step 2, the gate](2-the-gate.md), what it does inside and what happens when you add it to
 lesson 7's span.
 
 The predictions above were committed before the first run started. Git has the date. When the
@@ -146,4 +146,4 @@ uv run pytest tests/test_04_attnlab.py
 
 </details>
 
-Next: [step 11, the gate](11-the-gate.md), then [step 12](12-think-and-attention.md). Then [lesson 8, export](../08-export/README.md).
+Next: [step 2, the gate](2-the-gate.md), then [step 3](3-think-and-attention.md).

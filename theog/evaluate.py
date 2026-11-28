@@ -3,7 +3,7 @@
   uv run python -m theog.evaluate --ckpt runs/theog-50m/best.pt --tokenizer data/tokenizer.json \
       --dataset humaneval --out results/
   uv run python -m theog.evaluate --ckpt runs/a/final.pt --ensemble runs/b/final.pt --tokenizer data/tokenizer.json \
-      --design psr --dataset humaneval --out results/      # two models as one (lesson 4, step 12)
+      --design psr --dataset humaneval --out results/      # two models as one (lesson 10, step 3)
   uv run --extra sanity python -m theog.evaluate --hf Salesforce/codegen-350M-mono --dataset humaneval --out results/
 
 A task passes when the generated code and the task's own tests run clean in a
@@ -113,7 +113,7 @@ def prefilled(model, tok, task, prefill, think, temperature, top_k, max_new):
 
 
 def ensemble(a, b):
-    """Two models as one (lesson 4, step 12). At every step the next-token scores are the mean of
+    """Two models as one (lesson 10, step 3). At every step the next-token scores are the mean of
     the two models' log-probabilities: a geometric mean of their distributions. Greedy decoding
     picks the token both models like best together. Same tokenizer, same window."""
     import torch

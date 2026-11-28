@@ -175,5 +175,5 @@ model with those pieces off.
 
 </details>
 
-Next: [lesson 5, training](../05-training/README.md). Steps 9 to 12 need a trained model: lesson 5
-sends you back to step 9, lesson 7 to steps 10 to 12.
+Next: [lesson 5, training](../05-training/README.md). Step 9 needs a trained model: lesson 5
+sends you back to it.

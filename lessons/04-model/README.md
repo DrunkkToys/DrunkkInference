@@ -32,6 +32,11 @@ token ids
 8 RMSNorm, × embedding table   one score per vocabulary token
 ```
 
+Two parts. **Part 1, build it**, is now: steps 1 to 8, every one with a test. **Part 2, look
+inside**, is step 9, and it waits for a trained model, so you come back to it after lesson 5.
+
+## Part 1: build it, now
+
 | step | piece | you write | test |
 |---|---|---|---|
 | [1](1-embedding.md) | embedding: ids to vectors | nothing: read it | `-k step1` |
@@ -42,10 +47,15 @@ token ids
 | [6](6-swiglu.md) | the SwiGLU MLP | `SwiGLU.forward` | `-k step6` |
 | [7](7-block.md) | a block and the residual stream | `Block.forward` | `-k step7` |
 | [8](8-full-model.md) | the whole model, tied output | `TheOG.forward` | `-k step8` |
+
+## Part 2: look inside, after lesson 5
+
+| step | piece | you write | test |
+|---|---|---|---|
 | [9](9-reading-attention.md) | reading the attention of a trained model | nothing: run it | `test_04_attnlab.py` |
-| [10](10-attention-experiments.md) | after lesson 7: changing the attention block: GQA, heads, a gate | your prediction | `test_04_attnlab.py` |
-| [11](11-the-gate.md) | after lesson 7: the gate inside, with the think span, and the mistake you can see | nothing: read it | — |
-| [12](12-think-and-attention.md) | after step 11: the think span and the gate together, two models as one | your prediction | `test_04_attnlab.py` |
+
+Changing the attention, the part every paper changes, is a lesson of its own:
+[lesson 10](../10-attention/README.md), after the course.
 
 Run one step's tests with:
 
@@ -63,11 +73,8 @@ it. The calls are easy to look up; knowing which ones you need is the part that 
 
 Do the steps in order. Each test only uses the steps before it.
 
-Steps 9 to 12 are the odd ones out. They need a *trained* model, so skip them now. Step 9 comes
-after lesson 5. Steps 10 to 12 are extras, after lesson 7: step 10 scores every change on
-HumanEval and MBPP (lesson 6), the way lesson 7 scores its span designs, step 11 takes the
-one change that won apart, and step 12 puts it together with the think span.
-That's where it gets fun: you stop asking what attention computes and start asking
-what your model actually does with it. Spoiler: not what the diagrams say.
+Step 9 is the odd one out. It needs a *trained* model, so skip it now: lesson 5 sends you back.
+That's where it gets fun: you stop asking what attention computes and start asking what your
+model actually does with it. Spoiler: not what the diagrams say.
 
 Start: [step 1, the embedding](1-embedding.md).
